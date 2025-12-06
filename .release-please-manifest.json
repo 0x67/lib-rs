@@ -1,0 +1,6 @@
+{
+  "http-client": "0.1.0",
+  "config-loader": "0.1.0",
+  "logger": "0.1.0",
+  "task-manager": "0.1.0"
+}

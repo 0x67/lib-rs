@@ -1,0 +1,18 @@
+[package]
+name = "task-manager"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+_workspace-hack = { workspace = true }
+async-trait = { workspace = true }
+core_affinity = { workspace = true }
+logger = { path = "../logger" }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-graceful-shutdown = { workspace = true }
+tokio-util = { workspace = true }
