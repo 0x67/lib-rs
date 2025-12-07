@@ -106,7 +106,9 @@ impl HttpClientBuilder {
             }
         }
 
-        let client = base.build().expect("Failed to create base reqwest client");
+        let client = base.build().unwrap_or_else(|_| {
+            panic!("reqwest client builder failed - this should be unreachable in reqwest 0.12+")
+        });
         let mut builder = ClientBuilder::new(client);
 
         // Add retry middleware if enabled

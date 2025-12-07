@@ -14,8 +14,8 @@ find . -name "Cargo.toml" -not -path "./target/*" -exec sh -c '
   fi
 ' \;
 
-# Stage formatted files
-git add -u
+# Restage only files that were already staged
+git diff --staged --name-only --diff-filter=ACM | xargs -r git add
 
 echo "✅ Code formatted and staged"
 
