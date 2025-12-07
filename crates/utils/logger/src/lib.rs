@@ -384,7 +384,12 @@ pub fn setup_logging(
                     .with_ansi(file_format.map(|f| f.ansi).unwrap_or(false))
                     .with_target(file_format.map(|f| f.target).unwrap_or(true))
                     .with_file(file_format.map(|f| f.file).unwrap_or(true))
-                    .with_line_number(file_format.map(|f| f.line_number).unwrap_or(true));
+                    .with_line_number(file_format.map(|f| f.line_number).unwrap_or(true))
+                    .with_span_events(if file_format.map(|f| f.with_span_events).unwrap_or(true) {
+                        tracing_subscriber::fmt::format::FmtSpan::FULL
+                    } else {
+                        tracing_subscriber::fmt::format::FmtSpan::NONE
+                    });
                 Ok::<_, SetupLogging>((layer, guard))
             })
             .transpose()?;
@@ -410,7 +415,12 @@ pub fn setup_logging(
                 .with_ansi(stdout_format.ansi)
                 .with_target(stdout_format.target)
                 .with_file(stdout_format.file)
-                .with_line_number(stdout_format.line_number);
+                .with_line_number(stdout_format.line_number)
+                .with_span_events(if stdout_format.with_span_events {
+                    tracing_subscriber::fmt::format::FmtSpan::FULL
+                } else {
+                    tracing_subscriber::fmt::format::FmtSpan::NONE
+                });
             (layer, guard)
         });
 
