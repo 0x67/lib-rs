@@ -1,4 +1,6 @@
-use crate::{LoggingError, OpenTelemetryLayer};
+use crate::{
+    OpenTelemetryLayer, OtelExporterError, OtelExporterErrorKind, SetupLogging, SetupLoggingKind,
+};
 use config_loader::{app_config::BaseAppConfig, logging::OtelConfig};
 use opentelemetry::trace::TracerProvider;
 use opentelemetry_otlp::{Protocol, WithExportConfig};
@@ -19,7 +21,7 @@ pub fn setup_otel(
         opentelemetry_sdk::logs::SdkLoggerProvider,
         opentelemetry_sdk::metrics::SdkMeterProvider,
     ),
-    LoggingError,
+    SetupLogging,
 > {
     use std::time::Duration;
 
@@ -35,7 +37,13 @@ pub fn setup_otel(
         .with_protocol(Protocol::Grpc)
         .with_timeout(Duration::from_secs(3)) // 3 second timeout for export
         .build()
-        .map_err(|e| LoggingError::OtelExporterBuilderError(e.to_string()))?;
+        .map_err(|e| {
+            SetupLogging::new(SetupLoggingKind::OtelExporter {
+                source: OtelExporterError::new(OtelExporterErrorKind::BuildSpanExporter {
+                    source: Box::new(e),
+                }),
+            })
+        })?;
 
     // Create resource with service name
     let resource = Resource::builder()
@@ -71,7 +79,13 @@ pub fn setup_otel(
         .with_protocol(Protocol::Grpc)
         .with_timeout(Duration::from_secs(3))
         .build()
-        .map_err(|e| LoggingError::OtelExporterBuilderError(e.to_string()))?;
+        .map_err(|e| {
+            SetupLogging::new(SetupLoggingKind::OtelExporter {
+                source: OtelExporterError::new(OtelExporterErrorKind::BuildLogExporter {
+                    source: Box::new(e),
+                }),
+            })
+        })?;
 
     // Configure batch log processor
     let log_batch_config = opentelemetry_sdk::logs::BatchConfigBuilder::default()
@@ -96,7 +110,13 @@ pub fn setup_otel(
         .with_protocol(Protocol::Grpc)
         .with_timeout(Duration::from_secs(3))
         .build()
-        .map_err(|e| LoggingError::OtelExporterBuilderError(e.to_string()))?;
+        .map_err(|e| {
+            SetupLogging::new(SetupLoggingKind::OtelExporter {
+                source: OtelExporterError::new(OtelExporterErrorKind::BuildMetricExporter {
+                    source: Box::new(e),
+                }),
+            })
+        })?;
 
     // Configure periodic streams for metrics
     let meter_provider = opentelemetry_sdk::metrics::SdkMeterProvider::builder()

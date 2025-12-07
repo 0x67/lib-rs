@@ -24,20 +24,207 @@ use tracing_subscriber::{EnvFilter, Registry, fmt::time::OffsetTime, layer::Subs
 #[cfg(feature = "sysinfo")]
 pub mod sysinfo;
 
+/// Error that occurs when setting up logging
+#[derive(Debug, thiserror::Error)]
+#[error("failed to setup logging")]
+#[non_exhaustive]
+pub struct SetupLogging {
+    #[source]
+    pub kind: SetupLoggingKind,
+}
+
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
-pub enum LoggingError {
-    #[error("Failed to build layer: {message}, context: {context}")]
-    BuildLayerError {
-        message: String,
-        context: &'static str,
+pub enum SetupLoggingKind {
+    #[error("invalid env filter directive '{directive}'")]
+    #[non_exhaustive]
+    InvalidEnvFilter {
+        directive: String,
+        #[source]
+        source: tracing_subscriber::filter::ParseError,
     },
-    #[error("Failed to build otel exporter: {0}")]
-    OtelExporterBuilderError(String),
-    #[error("Missing configuration: {0}")]
-    MissingConfigurationError(String),
-    #[error("Failed to get pid: {0}")]
-    MissingPid(String),
+
+    #[error("missing {config_type} configuration")]
+    #[non_exhaustive]
+    MissingConfig { config_type: &'static str },
+
+    #[error("failed to set global subscriber")]
+    #[non_exhaustive]
+    SetGlobalSubscriber {
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+
+    #[cfg(feature = "file")]
+    #[error("file appender error")]
+    #[non_exhaustive]
+    FileAppender {
+        #[source]
+        source: FileAppenderError,
+    },
+
+    #[cfg(feature = "otel")]
+    #[error("otel exporter error")]
+    #[non_exhaustive]
+    OtelExporter {
+        #[source]
+        source: OtelExporterError,
+    },
+}
+
+impl SetupLogging {
+    pub fn new(kind: SetupLoggingKind) -> Self {
+        Self { kind }
+    }
+
+    pub fn invalid_env_filter(
+        directive: impl Into<String>,
+        source: tracing_subscriber::filter::ParseError,
+    ) -> Self {
+        Self::new(SetupLoggingKind::InvalidEnvFilter {
+            directive: directive.into(),
+            source,
+        })
+    }
+
+    pub fn missing_config(config_type: &'static str) -> Self {
+        Self::new(SetupLoggingKind::MissingConfig { config_type })
+    }
+}
+
+#[cfg(feature = "file")]
+/// Error that occurs when setting up file appender
+#[derive(Debug, thiserror::Error)]
+#[error("failed to setup file appender")]
+#[non_exhaustive]
+pub struct FileAppenderError {
+    #[source]
+    pub kind: FileAppenderErrorKind,
+}
+
+#[cfg(feature = "file")]
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+pub enum FileAppenderErrorKind {
+    #[error("failed to create directory '{}'" , path.display())]
+    #[non_exhaustive]
+    CreateDirectory {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+
+    #[error("path '{}' is not a directory", path.display())]
+    #[non_exhaustive]
+    NotDirectory { path: PathBuf },
+
+    #[error("no write permission for directory '{}'", path.display())]
+    #[non_exhaustive]
+    NoWritePermission { path: PathBuf },
+
+    #[error("failed to open log file '{}'", path.display())]
+    #[non_exhaustive]
+    OpenLogFile {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+}
+
+#[cfg(feature = "file")]
+impl FileAppenderError {
+    pub fn new(kind: FileAppenderErrorKind) -> Self {
+        Self { kind }
+    }
+}
+
+#[cfg(feature = "otel")]
+/// Error that occurs when setting up OpenTelemetry exporter
+#[derive(Debug, thiserror::Error)]
+#[error("failed to setup otel exporter")]
+#[non_exhaustive]
+pub struct OtelExporterError {
+    #[source]
+    pub kind: OtelExporterErrorKind,
+}
+
+#[cfg(feature = "otel")]
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+pub enum OtelExporterErrorKind {
+    #[error("failed to build span exporter")]
+    #[non_exhaustive]
+    BuildSpanExporter {
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+
+    #[error("failed to build log exporter")]
+    #[non_exhaustive]
+    BuildLogExporter {
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+
+    #[error("failed to build metric exporter")]
+    #[non_exhaustive]
+    BuildMetricExporter {
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+}
+
+#[cfg(feature = "otel")]
+impl OtelExporterError {
+    pub fn new(kind: OtelExporterErrorKind) -> Self {
+        Self { kind }
+    }
+}
+
+#[cfg(feature = "file")]
+use std::path::PathBuf;
+
+#[cfg(feature = "sysinfo")]
+/// Error that occurs when collecting system information
+#[derive(Debug, thiserror::Error)]
+#[error("failed to collect system information")]
+#[non_exhaustive]
+pub struct SysInfoError {
+    #[source]
+    pub kind: SysInfoErrorKind,
+}
+
+#[cfg(feature = "sysinfo")]
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+pub enum SysInfoErrorKind {
+    #[error("failed to get process id")]
+    #[non_exhaustive]
+    GetPid {
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+
+    #[error("process {pid} not found")]
+    #[non_exhaustive]
+    ProcessNotFound { pid: u32 },
+}
+
+#[cfg(feature = "sysinfo")]
+impl SysInfoError {
+    pub fn new(kind: SysInfoErrorKind) -> Self {
+        Self { kind }
+    }
+
+    pub fn get_pid(source: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Self {
+        Self::new(SysInfoErrorKind::GetPid {
+            source: source.into(),
+        })
+    }
+
+    pub fn process_not_found(pid: u32) -> Self {
+        Self::new(SysInfoErrorKind::ProcessNotFound { pid })
+    }
 }
 
 pub struct LoggingGuard {
@@ -96,7 +283,7 @@ pub fn setup_logging(
     app_config: BaseAppConfig,
     logger_config: LoggerConfig,
     env_filter_override: Option<Vec<&str>>,
-) -> Result<LoggingGuard, LoggingError> {
+) -> Result<LoggingGuard, SetupLogging> {
     let fmt: &[BorrowedFormatItem<'_>] = if cfg!(debug_assertions) {
         format_description!("[hour]:[minute]:[second].[subsecond digits:3]")
     } else {
@@ -119,8 +306,10 @@ pub fn setup_logging(
 
     if let Some(directives) = env_filter_override {
         for dir in directives {
-            env_filter =
-                env_filter.add_directive(dir.parse().expect("Invalid env filter directive"));
+            let directive = dir
+                .parse()
+                .map_err(|e| SetupLogging::invalid_env_filter(dir, e))?;
+            env_filter = env_filter.add_directive(directive);
         }
     }
 
@@ -128,11 +317,10 @@ pub fn setup_logging(
 
     #[cfg(feature = "otel")]
     let (registry, tracer_provider, logger_provider, meter_provider) = {
-        let otel_config = logger_config.otel.as_ref().ok_or_else(|| {
-            LoggingError::MissingConfigurationError(
-                "otel logger configuration is missing".to_string(),
-            )
-        })?;
+        let otel_config = logger_config
+            .otel
+            .as_ref()
+            .ok_or_else(|| SetupLogging::missing_config("otel"))?;
 
         let base = Registry::default();
         let (otel_layer, tracer_provider, logger_provider, meter_provider) =
@@ -155,11 +343,10 @@ pub fn setup_logging(
 
     #[cfg(feature = "file")]
     let (registry, file_guard) = {
-        let file_config = logger_config.file.as_ref().ok_or_else(|| {
-            LoggingError::MissingConfigurationError(
-                "file logger configuration is missing".to_string(),
-            )
-        })?;
+        let file_config = logger_config
+            .file
+            .as_ref()
+            .ok_or_else(|| SetupLogging::missing_config("file"))?;
 
         let (non_blocking, guard) = setup_file_appender(app_config.clone(), file_config.clone())?;
         let file_layer = tracing_subscriber::fmt::Layer::default()
@@ -196,10 +383,9 @@ pub fn setup_logging(
         warn!("Global trace dispatcher already set, skipping re-init");
     } else {
         tracing::subscriber::set_global_default(registry).map_err(|e| {
-            LoggingError::BuildLayerError {
-                message: e.to_string(),
-                context: "init",
-            }
+            SetupLogging::new(SetupLoggingKind::SetGlobalSubscriber {
+                source: Box::new(e),
+            })
         })?;
     }
 
