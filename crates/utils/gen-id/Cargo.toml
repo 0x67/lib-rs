@@ -1,0 +1,16 @@
+[package]
+name = "gen-id"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[features]
+default = ["simd"]
+simd = ["dep:uuid-simd"]
+
+[dependencies]
+uuid = { workspace = true, features = ["v4", "v7", "zerocopy", "serde"] }
+uuid-simd = { workspace = true, optional = true, features = ["std"] }

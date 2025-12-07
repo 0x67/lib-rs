@@ -3,6 +3,7 @@ resolver = "3"
 members = [
     "crates/_workspace-hack",
     "crates/utils/config-loader",
+    "crates/utils/gen-id",
     "crates/utils/http-client",
     "crates/utils/logger",
     "crates/utils/task-manager",
@@ -19,6 +20,7 @@ publish = ["github"]
 # Internal deps
 _workspace-hack = { path = "crates/_workspace-hack" }
 config-loader = { path = "crates/utils/config-loader" }
+gen-id = { path = "crates/utils/gen-id" }
 http-client = { path = "crates/utils/http-client" }
 logger = { path = "crates/utils/logger" }
 task-manager = { path = "crates/utils/task-manager" }
@@ -60,6 +62,8 @@ tracing-error = { version = "0.2.1", default-features = false }
 tracing-opentelemetry = { version = "0.32.0", default-features = false }
 tracing-subscriber = { version = "0.3.22", default-features = false }
 tracing-unwrap = { version = "1.0.1", default-features = false }
+uuid = { version = "1.19.0" }
+uuid-simd = { version = "0.8.0" }
 
 [profile.ci]
 inherits = "dev"
