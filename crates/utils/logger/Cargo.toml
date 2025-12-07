@@ -26,9 +26,8 @@ otel = [
 sysinfo = ["dep:sysinfo"]
 
 [dependencies]
-config-loader = { workspace = true }
-
 anyhow = { workspace = true }
+serde = { workspace = true }
 thiserror = { workspace = true }
 time = { workspace = true, features = ["macros"] }
 tracing = { workspace = true, features = ["valuable", "log"] }

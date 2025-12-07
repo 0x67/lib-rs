@@ -11,8 +11,10 @@ publish.workspace = true
 default = ["simd"]
 simd = ["dep:uuid-simd"]
 custom-uuid = ["dep:sysinfo"]
+nanoid = ["dep:nanoid"]
 
 [dependencies]
+nanoid = { workspace = true, optional = true }
 sysinfo = { workspace = true, optional = true, features = [
   "system",
   "user",

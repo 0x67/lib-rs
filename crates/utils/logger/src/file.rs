@@ -1,5 +1,4 @@
-use crate::LoggingError;
-use config_loader::{app_config::BaseAppConfig, logging::FileLoggerConfig};
+use crate::{FileAppenderError, FileAppenderErrorKind, FileConfig, SetupLogging, SetupLoggingKind};
 use std::{
     io::Write,
     path::{Path, PathBuf},
@@ -18,7 +17,7 @@ pub struct SizeBasedRollingWriter {
 }
 
 impl SizeBasedRollingWriter {
-    fn new(path: &Path, prefix: &str, max_size: u64) -> Result<Self, LoggingError> {
+    fn new(path: &Path, prefix: &str, max_size: u64) -> Result<Self, FileAppenderError> {
         let log_path = path.join(format!("{}.log", prefix));
 
         // Get current file size if it exists
@@ -32,10 +31,11 @@ impl SizeBasedRollingWriter {
             .create(true)
             .append(true)
             .open(&log_path)
-            .map_err(|e| LoggingError::BuildLayerError {
-                message: anyhow::anyhow!("Failed to open log file {}: {}", log_path.display(), e)
-                    .to_string(),
-                context: "file_appender",
+            .map_err(|e| {
+                FileAppenderError::new(FileAppenderErrorKind::OpenLogFile {
+                    path: log_path.clone(),
+                    source: e,
+                })
             })?;
 
         Ok(Self {
@@ -116,32 +116,36 @@ impl Write for SizeBasedRollingWriter {
 }
 
 pub fn setup_file_appender(
-    app_config: BaseAppConfig,
-    file_logger_config: FileLoggerConfig,
+    app_name: String,
+    file_logger_config: FileConfig,
 ) -> Result<
     (
         tracing_appender::non_blocking::NonBlocking,
         tracing_appender::non_blocking::WorkerGuard,
     ),
-    LoggingError,
+    SetupLogging,
 > {
     let path = PathBuf::from(&file_logger_config.path);
-    let prefix = app_config.name;
+    let prefix = app_name;
 
     if !path.exists() {
         use std::fs;
-        fs::create_dir_all(&path).map_err(|e| LoggingError::BuildLayerError {
-            message: anyhow::anyhow!("Failed to create directory {}: {}", path.display(), e)
-                .to_string(),
-            context: "file_appender",
+        fs::create_dir_all(&path).map_err(|e| {
+            SetupLogging::new(SetupLoggingKind::FileAppender {
+                source: FileAppenderError::new(FileAppenderErrorKind::CreateDirectory {
+                    path: path.clone(),
+                    source: e,
+                }),
+            })
         })?;
     }
 
     if !path.is_dir() {
-        return Err(LoggingError::BuildLayerError {
-            message: anyhow::anyhow!("Path {} is not a directory", path.display()).to_string(),
-            context: "file_appender",
-        });
+        return Err(SetupLogging::new(SetupLoggingKind::FileAppender {
+            source: FileAppenderError::new(FileAppenderErrorKind::NotDirectory {
+                path: path.clone(),
+            }),
+        }));
     }
 
     if path
@@ -149,15 +153,16 @@ pub fn setup_file_appender(
         .map(|m| m.permissions().readonly())
         .unwrap_or(true)
     {
-        return Err(LoggingError::BuildLayerError {
-            message: anyhow::anyhow!("No write permission for directory {}", path.display())
-                .to_string(),
-            context: "file_appender",
-        });
+        return Err(SetupLogging::new(SetupLoggingKind::FileAppender {
+            source: FileAppenderError::new(FileAppenderErrorKind::NoWritePermission {
+                path: path.clone(),
+            }),
+        }));
     }
 
     // size-based rolling writer
-    let writer = SizeBasedRollingWriter::new(&path, &prefix, file_logger_config.max_size)?;
+    let writer = SizeBasedRollingWriter::new(&path, &prefix, file_logger_config.max_size)
+        .map_err(|e| SetupLogging::new(SetupLoggingKind::FileAppender { source: e }))?;
     let (non_blocking_writer, guard) = tracing_appender::non_blocking(writer);
     Ok((non_blocking_writer, guard))
 }

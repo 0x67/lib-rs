@@ -1,6 +1,6 @@
 use sysinfo::{ProcessesToUpdate, System};
 
-use crate::LoggingError;
+use crate::{SysInfoError, SysInfoErrorKind};
 
 #[derive(Debug, Clone)]
 pub struct SysInfo {
@@ -12,16 +12,20 @@ pub struct SysInfo {
     pub disk_written_bytes: u64,
 }
 
-pub fn collect_sysinfo() -> Result<SysInfo, LoggingError> {
+pub fn collect_sysinfo() -> Result<SysInfo, SysInfoError> {
     let mut sys = System::new();
 
-    let pid = sysinfo::get_current_pid().map_err(|e| LoggingError::MissingPid(e.to_string()))?;
+    let pid = sysinfo::get_current_pid().map_err(|e| {
+        SysInfoError::new(SysInfoErrorKind::GetPid {
+            source: e.to_string().into(),
+        })
+    })?;
 
     sys.refresh_processes(ProcessesToUpdate::Some(&[pid]), true);
 
     let process = sys
         .process(pid)
-        .ok_or_else(|| LoggingError::MissingPid(format!("Process {} not found", pid)))?;
+        .ok_or_else(|| SysInfoError::process_not_found(pid.as_u32()))?;
 
     let disk_usage = process.disk_usage();
 

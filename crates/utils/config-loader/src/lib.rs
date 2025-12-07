@@ -3,8 +3,6 @@ pub mod database;
 pub mod env;
 pub mod kafka;
 pub mod loader;
-pub mod logging;
-pub mod redis;
 pub use config::{Config, ConfigBuilder, ConfigError, Environment, File, FileFormat};
 pub use loader::{HttpSource, load_config, load_config_async};
 pub mod remote;

@@ -2,6 +2,10 @@ use time::UtcOffset;
 
 /// Helper function to create a UtcOffset from hours
 ///
+/// # Panics
+///
+/// Panics if hours is not in the range -23..=23
+///
 /// # Examples
 ///
 /// ```
@@ -12,10 +16,19 @@ use time::UtcOffset;
 /// let utc = utc_offset_hours(0);          // UTC
 /// ```
 pub fn utc_offset_hours(hours: i8) -> UtcOffset {
-    UtcOffset::from_hms(hours, 0, 0).expect("Invalid UTC offset hours")
+    UtcOffset::from_hms(hours, 0, 0).unwrap_or_else(|_| {
+        panic!(
+            "invalid UTC offset hours: {}, must be in range -23..=23",
+            hours
+        )
+    })
 }
 
 /// Helper function to create a UtcOffset from hours and minutes
+///
+/// # Panics
+///
+/// Panics if the offset is invalid (hours must be -23..=23, minutes -59..=59, seconds -59..=59)
 ///
 /// # Examples
 ///
@@ -27,5 +40,10 @@ pub fn utc_offset_hours(hours: i8) -> UtcOffset {
 /// let australia = utc_offset_hms(9, 30, 0);  // UTC+9:30 (Adelaide)
 /// ```
 pub fn utc_offset_hms(hours: i8, minutes: i8, seconds: i8) -> UtcOffset {
-    UtcOffset::from_hms(hours, minutes, seconds).expect("Invalid UTC offset")
+    UtcOffset::from_hms(hours, minutes, seconds).unwrap_or_else(|_| {
+        panic!(
+            "invalid UTC offset: hours={}, minutes={}, seconds={}",
+            hours, minutes, seconds
+        )
+    })
 }

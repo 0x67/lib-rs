@@ -34,6 +34,7 @@ core_affinity = { version = "*" }
 crossbeam-channel = { version = "0.5.15", default-features = false }
 disruptor = { version = "3.6.1" }
 http = { version = "1.4.0", default-features = false }
+nanoid = "0.4.0"
 opentelemetry = { version = "0.31.0", default-features = false }
 opentelemetry-appender-tracing = { version = "0.31.1", default-features = false }
 opentelemetry-otlp = { version = "0.31.0", default-features = false }
