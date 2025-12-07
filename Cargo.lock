@@ -546,6 +546,8 @@ dependencies = [
 name = "gen-id"
 version = "0.1.0"
 dependencies = [
+ "sysinfo",
+ "thiserror 2.0.17",
  "uuid",
  "uuid-simd",
 ]

@@ -10,7 +10,14 @@ publish.workspace = true
 [features]
 default = ["simd"]
 simd = ["dep:uuid-simd"]
+custom-uuid = ["dep:sysinfo"]
 
 [dependencies]
+sysinfo = { workspace = true, optional = true, features = [
+  "system",
+  "user",
+  "component",
+] }
+thiserror = { workspace = true }
 uuid = { workspace = true, features = ["v4", "v7", "zerocopy", "serde"] }
 uuid-simd = { workspace = true, optional = true, features = ["std"] }
