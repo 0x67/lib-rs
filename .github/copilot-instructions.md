@@ -6,6 +6,7 @@
 - If unsure, ask for clarification instead of guessing.
 - When reviewing text, only comment on clarity issues if the text is genuinely confusing or could lead to errors.
 - Don't write documentation files when finish writing code.
+- Use cargo nextestest for running tests.
 
 ### Security & Safety
 

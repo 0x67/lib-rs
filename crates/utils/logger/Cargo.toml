@@ -38,6 +38,7 @@ tracing-subscriber = { workspace = true, features = [
   "env-filter",
   "json",
   "time",
+  "ansi",
 ] }
 tracing-unwrap = { workspace = true }
 
@@ -66,3 +67,6 @@ sysinfo = { workspace = true, optional = true, features = [
 tokio = { workspace = true, optional = true }
 tonic = { workspace = true, optional = true }
 tracing-opentelemetry = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
