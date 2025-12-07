@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/0x67/lib-rs/compare/logger-v0.1.3...logger-v0.1.4) (2025-12-07)
+
+
+### Features
+
+* **logger:** add option to disable span events ([#15](https://github.com/0x67/lib-rs/issues/15)) ([9755cff](https://github.com/0x67/lib-rs/commit/9755cffc7eee8ff0a8d9490be7d436e59f939c4a))
+
 ## [0.1.3](https://github.com/0x67/lib-rs/compare/logger-v0.1.2...logger-v0.1.3) (2025-12-07)
 
 
