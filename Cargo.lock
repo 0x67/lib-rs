@@ -984,7 +984,6 @@ name = "logger"
 version = "0.1.1"
 dependencies = [
  "anyhow",
- "config-loader",
  "opentelemetry 0.31.0",
  "opentelemetry-appender-tracing",
  "opentelemetry-otlp",
@@ -992,6 +991,7 @@ dependencies = [
  "opentelemetry-semantic-conventions",
  "opentelemetry-stdout",
  "opentelemetry_sdk 0.31.0",
+ "serde",
  "sysinfo",
  "thiserror 2.0.17",
  "time",

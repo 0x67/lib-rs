@@ -1,5 +1,4 @@
-use crate::{FileAppenderError, FileAppenderErrorKind, SetupLogging, SetupLoggingKind};
-use config_loader::{app_config::BaseAppConfig, logging::FileLoggerConfig};
+use crate::{FileAppenderError, FileAppenderErrorKind, FileConfig, SetupLogging, SetupLoggingKind};
 use std::{
     io::Write,
     path::{Path, PathBuf},
@@ -117,8 +116,8 @@ impl Write for SizeBasedRollingWriter {
 }
 
 pub fn setup_file_appender(
-    app_config: BaseAppConfig,
-    file_logger_config: FileLoggerConfig,
+    app_name: String,
+    file_logger_config: FileConfig,
 ) -> Result<
     (
         tracing_appender::non_blocking::NonBlocking,
@@ -127,7 +126,7 @@ pub fn setup_file_appender(
     SetupLogging,
 > {
     let path = PathBuf::from(&file_logger_config.path);
-    let prefix = app_config.name;
+    let prefix = app_name;
 
     if !path.exists() {
         use std::fs;

@@ -1,15 +1,17 @@
+pub mod config;
 #[cfg(feature = "file")]
 pub mod file;
 #[cfg(feature = "otel")]
 pub mod otel;
 pub mod tracing_unwrap;
 pub mod util;
+
 #[cfg(feature = "file")]
 use crate::file::setup_file_appender;
 #[cfg(feature = "otel")]
 use crate::otel::setup_otel;
 pub use crate::util::{utc_offset_hms, utc_offset_hours};
-use config_loader::{app_config::BaseAppConfig, logging::LoggerConfig};
+pub use config::*;
 pub use time::UtcOffset;
 use time::{format_description::BorrowedFormatItem, macros::format_description};
 pub use tracing::{
@@ -280,17 +282,20 @@ impl Drop for LoggingGuard {
 }
 
 pub fn setup_logging(
-    app_config: BaseAppConfig,
+    app_name: impl Into<String>,
+    timezone_offset: Option<i8>,
     logger_config: LoggerConfig,
     env_filter_override: Option<Vec<&str>>,
 ) -> Result<LoggingGuard, SetupLogging> {
+    #[cfg_attr(not(any(feature = "file", feature = "otel")), allow(unused_variables))]
+    let app_name: String = app_name.into();
     let fmt: &[BorrowedFormatItem<'_>] = if cfg!(debug_assertions) {
         format_description!("[hour]:[minute]:[second].[subsecond digits:3]")
     } else {
         format_description!("[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:3]")
     };
 
-    let timezone = match app_config.timezone {
+    let timezone = match timezone_offset {
         Some(offset) => utc_offset_hours(offset),
         None => UtcOffset::UTC,
     };
@@ -324,7 +329,7 @@ pub fn setup_logging(
 
         let base = Registry::default();
         let (otel_layer, tracer_provider, logger_provider, meter_provider) =
-            setup_otel(app_config.clone(), otel_config.clone())?;
+            setup_otel(app_name.clone(), otel_config.clone())?;
         let bridge = opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge::new(
             &logger_provider,
         );
@@ -348,14 +353,18 @@ pub fn setup_logging(
             .as_ref()
             .ok_or_else(|| SetupLogging::missing_config("file"))?;
 
-        let (non_blocking, guard) = setup_file_appender(app_config.clone(), file_config.clone())?;
+        let (non_blocking, guard) = setup_file_appender(app_name.clone(), file_config.clone())?;
+        let file_format = file_config
+            .format
+            .as_ref()
+            .or(logger_config.format.as_ref());
         let file_layer = tracing_subscriber::fmt::Layer::default()
             .with_writer(non_blocking)
             .with_timer(timer.clone())
-            .with_ansi(false)
-            .with_target(true)
-            .with_file(true)
-            .with_line_number(true);
+            .with_ansi(file_format.map(|f| f.ansi).unwrap_or(false))
+            .with_target(file_format.map(|f| f.target).unwrap_or(true))
+            .with_file(file_format.map(|f| f.file).unwrap_or(true))
+            .with_line_number(file_format.map(|f| f.line_number).unwrap_or(true));
         (registry.with(file_layer), guard)
     };
 
@@ -365,14 +374,14 @@ pub fn setup_logging(
     #[cfg(feature = "stdout")]
     let (registry, stdout_guard) = {
         let (non_blocking, guard) = tracing_appender::non_blocking(std::io::stdout());
-
+        let stdout_format = logger_config.format.as_ref();
         let console_layer = tracing_subscriber::fmt::Layer::default()
             .with_writer(non_blocking)
             .with_timer(timer)
-            .with_ansi(true)
-            .with_target(true)
-            .with_file(true)
-            .with_line_number(true);
+            .with_ansi(stdout_format.map(|f| f.ansi).unwrap_or(true))
+            .with_target(stdout_format.map(|f| f.target).unwrap_or(true))
+            .with_file(stdout_format.map(|f| f.file).unwrap_or(true))
+            .with_line_number(stdout_format.map(|f| f.line_number).unwrap_or(true));
         (registry.with(console_layer), guard)
     };
 
