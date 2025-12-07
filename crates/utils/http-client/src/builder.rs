@@ -18,8 +18,8 @@ pub struct HttpClientBuilderConfig {
     pub max_idle_per_host: Option<usize>,
     pub default_headers: Option<reqwest::header::HeaderMap>,
     pub compressions: Option<Vec<CompressionType>>,
-    pub retry_enabled: bool,
-    pub max_retries: u32,
+    pub retry_enabled: Option<bool>,
+    pub max_retries: Option<u32>,
 }
 
 impl Default for HttpClientBuilderConfig {
@@ -37,8 +37,8 @@ impl Default for HttpClientBuilderConfig {
                 headers
             }),
             compressions: Some(vec![CompressionType::Gzip]),
-            retry_enabled: true,
-            max_retries: 3,
+            retry_enabled: Some(true),
+            max_retries: Some(3),
         }
     }
 }
@@ -58,6 +58,7 @@ impl HttpClientBuilder {
             merged.compressions = custom.compressions;
             merged.retry_enabled = custom.retry_enabled;
             merged.max_retries = custom.max_retries;
+            merged.retry_enabled = custom.retry_enabled;
         }
 
         let mut base = Client::builder();
@@ -76,6 +77,14 @@ impl HttpClientBuilder {
 
         if let Some(connect_timeout) = merged.connect_timeout {
             base = base.connect_timeout(connect_timeout);
+        }
+
+        if let Some(retry_enabled) = merged.retry_enabled {
+            merged.retry_enabled = Some(retry_enabled);
+        }
+
+        if let Some(max_retries) = merged.max_retries {
+            merged.max_retries = Some(max_retries);
         }
 
         if let Some(compressions) = merged.compressions {
@@ -101,9 +110,9 @@ impl HttpClientBuilder {
         let mut builder = ClientBuilder::new(client);
 
         // Add retry middleware if enabled
-        if merged.retry_enabled {
+        if matches!(merged.retry_enabled, Some(true)) {
             builder = builder.with(crate::middleware::retry::retry_middleware(
-                merged.max_retries,
+                merged.max_retries.unwrap_or(3),
             ));
         }
 
