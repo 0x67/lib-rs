@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/0x67/lib-rs/compare/logger-v0.1.2...logger-v0.1.3) (2025-12-07)
+
+
+### Bug Fixes
+
+* **logger:** crashed because of missing guards ([#13](https://github.com/0x67/lib-rs/issues/13)) ([8ef3183](https://github.com/0x67/lib-rs/commit/8ef3183af1d8d99eb10379cf3e5dcda05fb7b648))
+
 ## [0.1.2](https://github.com/0x67/lib-rs/compare/logger-v0.1.1...logger-v0.1.2) (2025-12-07)
 
 
