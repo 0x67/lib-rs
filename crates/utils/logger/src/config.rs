@@ -37,6 +37,13 @@ pub struct FormatConfig {
     pub file: bool,
     /// Include line number in log output
     pub line_number: bool,
+    /// Include span events in log output (enter/exit events)
+    #[serde(default = "default_true")]
+    pub with_span_events: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl Default for FormatConfig {
@@ -46,6 +53,7 @@ impl Default for FormatConfig {
             target: true,
             file: true,
             line_number: true,
+            with_span_events: true,
         }
     }
 }
