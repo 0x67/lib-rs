@@ -49,14 +49,14 @@ impl OsType {
         OsType::Linux
     }
 
-    /// Encode as 4-bit value
+    /// Encode as 3-bit value
     pub(crate) fn encode(self) -> u8 {
         self as u8
     }
 
-    /// Decode from 4-bit value
+    /// Decode from 3-bit value
     pub(crate) fn decode(value: u8) -> Self {
-        match value & 0x0F {
+        match value & 0x07 {
             1 => OsType::Linux,
             2 => OsType::Windows,
             3 => OsType::MacOS,
@@ -133,12 +133,12 @@ impl ClientMetadata {
             let major = parts[0].parse::<u8>().unwrap_or(0);
             let minor = parts[1].parse::<u8>().unwrap_or(0);
 
-            // Clamp to 4 bits each (0-15)
-            (major.min(15), minor.min(15))
+            // Clamp to 5 bits major (0-31), 4 bits minor (0-15)
+            (major.min(31), minor.min(15))
         } else if let Some(first) = parts.first() {
             // Try to extract just major version
             let major = first.parse::<u8>().unwrap_or(0);
-            (major.min(15), 0)
+            (major.min(31), 0)
         } else {
             // Fallback to defaults
             Self::detect_os_version()
@@ -215,19 +215,20 @@ pub(crate) fn hash_to_u32(input: &str) -> u32 {
     hash
 }
 
-/// Encode OS metadata into 12 bits (4 bits type + 8 bits version)
+/// Encode OS metadata into 12 bits (3 bits type + 5 bits major + 4 bits minor)
 #[inline]
 pub(crate) fn encode_os_metadata(os_type: OsType, os_version: (u8, u8)) -> u16 {
-    let type_bits = (os_type.encode() as u16) << 8;
-    let version_bits = ((os_version.0 & 0x0F) as u16) << 4 | ((os_version.1 & 0x0F) as u16);
-    type_bits | version_bits
+    let type_bits = (os_type.encode() as u16) << 9;
+    let major_bits = ((os_version.0 & 0x1F) as u16) << 4;
+    let minor_bits = (os_version.1 & 0x0F) as u16;
+    type_bits | major_bits | minor_bits
 }
 
-/// Decode OS metadata from 12 bits
+/// Decode OS metadata from 12 bits (3 bits type + 5 bits major + 4 bits minor)
 #[inline]
 pub(crate) fn decode_os_metadata(encoded: u16) -> (OsType, (u8, u8)) {
-    let os_type = OsType::decode((encoded >> 8) as u8);
-    let major = ((encoded >> 4) & 0x0F) as u8;
+    let os_type = OsType::decode((encoded >> 9) as u8);
+    let major = ((encoded >> 4) & 0x1F) as u8;
     let minor = (encoded & 0x0F) as u8;
     (os_type, (major, minor))
 }
@@ -328,7 +329,7 @@ mod tests {
             (OsType::Windows, (10, 0)),
             (OsType::MacOS, (14, 5)),
             (OsType::Android, (13, 0)),
-            (OsType::IOS, (17, 2)),
+            (OsType::IOS, (17, 2)), // 5-bit major version supports up to 31
         ];
 
         for (os_type, os_version) in &test_cases {
@@ -361,5 +362,23 @@ mod tests {
 
         // Different inputs should (likely) produce different hashes
         assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn test_version_clamping() {
+        // Test that versions exceeding bit limits are properly masked
+        // Major: 5-bit (0-31), Minor: 4-bit (0-15)
+        let test_cases = [
+            ((31, 15), (31, 15)), // Max values for 5-bit major, 4-bit minor
+            ((32, 0), (0, 0)),    // 32 & 0x1F = 0 (overflow)
+            ((17, 2), (17, 2)),   // Valid iOS 17.2
+            ((25, 16), (25, 0)),  // Minor overflow: 16 & 0x0F = 0
+        ];
+
+        for (input_version, expected_version) in &test_cases {
+            let encoded = encode_os_metadata(OsType::Linux, *input_version);
+            let (_, decoded_version) = decode_os_metadata(encoded);
+            assert_eq!(*expected_version, decoded_version);
+        }
     }
 }
