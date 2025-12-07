@@ -1,7 +1,13 @@
 {
-  "name": "polaris-trade-libs",
-  "version": "1.0.0",
-  "description": "PolarisTrade Core Libraries",
+  "name": "lib-rs",
+  "version": "0.0.0",
+  "description": "Some reusable Rust libraries for my personal projects.",
+  "author": "Gabriel Putra Pinastika <gabri.putra@gmail.com>",
+  "repository": {
+    "type": "github",
+    "url": "https://github.com/0x67/lib-rs"
+  },
+  "license": "MIT",
   "private": true,
   "scripts": {
     "commit": "git-cz",
@@ -26,9 +32,6 @@
   "keywords": [
     "rust",
     "trading",
-    "quantforge",
     "libraries"
-  ],
-  "author": "QuantForge Team",
-  "license": "MIT"
+  ]
 }
