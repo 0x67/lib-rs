@@ -3,5 +3,5 @@
   "crates/utils/http-client": "0.1.1",
   "crates/utils/logger": "0.1.1",
   "crates/utils/task-manager": "0.1.1",
-  "crates/utils/gen-id": "0.1.0"
+  "crates/utils/gen-id": "0.1.1"
 }
