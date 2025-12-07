@@ -4,7 +4,10 @@ use time::UtcOffset;
 ///
 /// # Panics
 ///
-/// Panics if hours is not in the range -23..=23
+/// Panics if the underlying `time::UtcOffset::from_hms` fails.
+/// This typically occurs with extremely large values outside the valid range.
+/// Common valid values are in the range -23..=23, but the exact boundaries
+/// depend on the `time` crate's implementation.
 ///
 /// # Examples
 ///
@@ -28,7 +31,13 @@ pub fn utc_offset_hours(hours: i8) -> UtcOffset {
 ///
 /// # Panics
 ///
-/// Panics if the offset is invalid (hours must be -23..=23, minutes -59..=59, seconds -59..=59)
+/// Panics if the underlying `time::UtcOffset::from_hms` fails.
+/// This occurs when any component is outside the valid range.
+///
+/// Common valid ranges (but implementation-dependent):
+/// - hours: typically -23..=23
+/// - minutes: typically -59..=59  
+/// - seconds: typically -59..=59
 ///
 /// # Examples
 ///
