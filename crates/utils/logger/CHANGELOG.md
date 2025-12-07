@@ -1,5 +1,7 @@
 # Changelog
 
+## [0.1.1](https://github.com/0x67/lib-rs/compare/logger-v0.1.0...logger-v0.1.1) (2025-12-07)
+
 ## 0.1.0 (2025-12-06)
 
 
