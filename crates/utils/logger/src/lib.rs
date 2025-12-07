@@ -235,47 +235,62 @@ pub struct LoggingGuard {
     pub file_guard: tracing_appender::non_blocking::WorkerGuard,
     #[cfg(feature = "otel")]
     /// Keep tracer provider alive for proper shutdown
-    pub tracer_provider: opentelemetry_sdk::trace::SdkTracerProvider,
+    pub tracer_provider: Option<opentelemetry_sdk::trace::SdkTracerProvider>,
     #[cfg(feature = "otel")]
     /// Keep logger provider alive for proper shutdown
-    pub logger_provider: opentelemetry_sdk::logs::SdkLoggerProvider,
+    pub logger_provider: Option<opentelemetry_sdk::logs::SdkLoggerProvider>,
     #[cfg(feature = "otel")]
     /// Keep meter provider alive for proper shutdown
-    pub meter_provider: opentelemetry_sdk::metrics::SdkMeterProvider,
+    pub meter_provider: Option<opentelemetry_sdk::metrics::SdkMeterProvider>,
     #[cfg(feature = "stdout")]
     /// Keep stdout guard alive to ensure all logs are flushed
     pub stdout_guard: tracing_appender::non_blocking::WorkerGuard,
+    /// Dummy field to ensure struct is never empty when all features are disabled
+    #[cfg(not(any(feature = "file", feature = "stdout", feature = "otel")))]
+    _dummy: (),
 }
 
 impl Drop for LoggingGuard {
     /// Shutdown all logging providers gracefully
     fn drop(&mut self) {
         #[cfg(feature = "otel")]
-        if let Err(e) = self.tracer_provider.force_flush() {
+        if let Some(ref tracer) = self.tracer_provider
+            && let Err(e) = tracer.force_flush()
+        {
             eprintln!("Failed to force flush tracer provider: {}", e);
         }
 
         #[cfg(feature = "otel")]
-        if let Err(e) = self.logger_provider.force_flush() {
+        if let Some(ref logger) = self.logger_provider
+            && let Err(e) = logger.force_flush()
+        {
             eprintln!("Failed to force flush logger provider: {}", e);
         }
 
         #[cfg(feature = "otel")]
-        if let Err(e) = self.meter_provider.force_flush() {
+        if let Some(ref meter) = self.meter_provider
+            && let Err(e) = meter.force_flush()
+        {
             eprintln!("Failed to force flush meter provider: {}", e);
         }
         #[cfg(feature = "otel")]
-        if let Err(e) = self.tracer_provider.shutdown() {
+        if let Some(ref tracer) = self.tracer_provider
+            && let Err(e) = tracer.shutdown()
+        {
             eprintln!("Failed to shutdown tracer provider: {}", e);
         }
 
         #[cfg(feature = "otel")]
-        if let Err(e) = self.logger_provider.shutdown() {
+        if let Some(ref logger) = self.logger_provider
+            && let Err(e) = logger.shutdown()
+        {
             eprintln!("Failed to shutdown logger provider: {}", e);
         }
 
         #[cfg(feature = "otel")]
-        if let Err(e) = self.meter_provider.shutdown() {
+        if let Some(ref meter) = self.meter_provider
+            && let Err(e) = meter.shutdown()
+        {
             eprintln!("Failed to shutdown meter provider: {}", e);
         }
     }
@@ -320,52 +335,66 @@ pub fn setup_logging(
 
     let level_filter = tracing_subscriber::filter::LevelFilter::from_level(max_level);
 
+    let registry = Registry::default();
+
     #[cfg(feature = "otel")]
     let (registry, tracer_provider, logger_provider, meter_provider) = {
-        let otel_config = logger_config
-            .otel
-            .as_ref()
-            .ok_or_else(|| SetupLogging::missing_config("otel"))?;
-
-        let base = Registry::default();
-        let (otel_layer, tracer_provider, logger_provider, meter_provider) =
-            setup_otel(app_name.clone(), otel_config.clone())?;
-        let bridge = opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge::new(
-            &logger_provider,
-        );
-        (
-            base.with(otel_layer).with(bridge),
-            tracer_provider,
-            logger_provider,
-            meter_provider,
-        )
+        if let Some(otel_config) = logger_config.otel.as_ref() {
+            let (otel_layer, tracer, logger, meter) =
+                setup_otel(app_name.clone(), otel_config.clone())?;
+            let bridge =
+                opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge::new(&logger);
+            (
+                registry.with(Some(otel_layer)).with(Some(bridge)),
+                Some(tracer),
+                Some(logger),
+                Some(meter),
+            )
+        } else {
+            // When otel feature is enabled but no config provided, use empty layers
+            (registry.with(None).with(None), None, None, None)
+        }
     };
 
     #[cfg(not(feature = "otel"))]
-    let registry = Registry::default();
+    let (_tracer_provider, _logger_provider, _meter_provider): (
+        Option<()>,
+        Option<()>,
+        Option<()>,
+    ) = (None, None, None);
 
     let registry = registry.with(env_filter).with(level_filter);
 
     #[cfg(feature = "file")]
     let (registry, file_guard) = {
-        let file_config = logger_config
+        let file_layer = logger_config
             .file
             .as_ref()
-            .ok_or_else(|| SetupLogging::missing_config("file"))?;
+            .filter(|fc| fc.enabled)
+            .map(|file_config| {
+                let (non_blocking, guard) =
+                    setup_file_appender(app_name.clone(), file_config.clone())?;
+                let file_format = file_config
+                    .format
+                    .as_ref()
+                    .or(logger_config.format.as_ref());
+                let layer = tracing_subscriber::fmt::Layer::default()
+                    .with_writer(non_blocking)
+                    .with_timer(timer.clone())
+                    .with_ansi(file_format.map(|f| f.ansi).unwrap_or(false))
+                    .with_target(file_format.map(|f| f.target).unwrap_or(true))
+                    .with_file(file_format.map(|f| f.file).unwrap_or(true))
+                    .with_line_number(file_format.map(|f| f.line_number).unwrap_or(true));
+                Ok::<_, SetupLogging>((layer, guard))
+            })
+            .transpose()?;
 
-        let (non_blocking, guard) = setup_file_appender(app_name.clone(), file_config.clone())?;
-        let file_format = file_config
-            .format
-            .as_ref()
-            .or(logger_config.format.as_ref());
-        let file_layer = tracing_subscriber::fmt::Layer::default()
-            .with_writer(non_blocking)
-            .with_timer(timer.clone())
-            .with_ansi(file_format.map(|f| f.ansi).unwrap_or(false))
-            .with_target(file_format.map(|f| f.target).unwrap_or(true))
-            .with_file(file_format.map(|f| f.file).unwrap_or(true))
-            .with_line_number(file_format.map(|f| f.line_number).unwrap_or(true));
-        (registry.with(file_layer), guard)
+        let (layer, guard) = file_layer.unzip();
+        let guard = guard.unwrap_or_else(|| {
+            let (_, g) = tracing_appender::non_blocking(std::io::sink());
+            g
+        });
+        (registry.with(layer), guard)
     };
 
     #[cfg(not(feature = "file"))]
@@ -373,16 +402,24 @@ pub fn setup_logging(
 
     #[cfg(feature = "stdout")]
     let (registry, stdout_guard) = {
-        let (non_blocking, guard) = tracing_appender::non_blocking(std::io::stdout());
-        let stdout_format = logger_config.format.as_ref();
-        let console_layer = tracing_subscriber::fmt::Layer::default()
-            .with_writer(non_blocking)
-            .with_timer(timer)
-            .with_ansi(stdout_format.map(|f| f.ansi).unwrap_or(true))
-            .with_target(stdout_format.map(|f| f.target).unwrap_or(true))
-            .with_file(stdout_format.map(|f| f.file).unwrap_or(true))
-            .with_line_number(stdout_format.map(|f| f.line_number).unwrap_or(true));
-        (registry.with(console_layer), guard)
+        let stdout_layer = logger_config.format.as_ref().map(|stdout_format| {
+            let (non_blocking, guard) = tracing_appender::non_blocking(std::io::stdout());
+            let layer = tracing_subscriber::fmt::Layer::default()
+                .with_writer(non_blocking)
+                .with_timer(timer)
+                .with_ansi(stdout_format.ansi)
+                .with_target(stdout_format.target)
+                .with_file(stdout_format.file)
+                .with_line_number(stdout_format.line_number);
+            (layer, guard)
+        });
+
+        let (layer, guard) = stdout_layer.unzip();
+        let guard = guard.unwrap_or_else(|| {
+            let (_, g) = tracing_appender::non_blocking(std::io::sink());
+            g
+        });
+        (registry.with(layer), guard)
     };
 
     #[cfg(not(feature = "stdout"))]
@@ -409,5 +446,7 @@ pub fn setup_logging(
         meter_provider,
         #[cfg(feature = "stdout")]
         stdout_guard,
+        #[cfg(not(any(feature = "file", feature = "stdout", feature = "otel")))]
+        _dummy: (),
     })
 }
