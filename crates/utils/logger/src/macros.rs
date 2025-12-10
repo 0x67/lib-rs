@@ -1,5 +1,13 @@
 #[macro_export]
 macro_rules! log {
+    // With explicit ? formatter (must come first to match before default)
+    ($level:ident, $event:expr $(, $k:ident = ?$v:expr)* $(,)?) => {{
+        $crate::tracing::$level!(
+            event = $event,
+            $($k = ?$v,)*
+        );
+    }};
+
     // With explicit % formatter
     ($level:ident, $event:expr $(, $k:ident = %$v:expr)* $(,)?) => {{
         $crate::tracing::$level!(
@@ -7,11 +15,12 @@ macro_rules! log {
             $($k = %$v,)*
         );
     }};
-    // With explicit ? formatter
-    ($level:ident, $event:expr $(, $k:ident = ?$v:expr)* $(,)?) => {{
+
+    // With explicit & formatter (for borrowed references)
+    ($level:ident, $event:expr $(, $k:ident = &$v:expr)* $(,)?) => {{
         $crate::tracing::$level!(
             event = $event,
-            $($k = ?$v,)*
+            $($k = &$v,)*
         );
     }};
     // Default: use Debug formatter
