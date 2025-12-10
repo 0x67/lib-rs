@@ -1,9 +1,9 @@
 #[macro_export]
 macro_rules! log {
-    ($level:ident, $event:expr, $($k:ident = $v:expr),* $(,)?) => {{
+    ($level:ident, $event:expr $(, $k:ident = $v:expr)* $(,)?) => {{
         $crate::tracing::$level!(
             event = $event,
-            $($k = %$v,)*
+            $($k = ?$v,)*
         );
     }};
 }
