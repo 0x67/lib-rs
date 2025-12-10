@@ -1,21 +1,24 @@
 #[macro_export]
 macro_rules! log {
+    // With explicit % formatter
     ($level:ident, $event:expr $(, $k:ident = %$v:expr)* $(,)?) => {{
         $crate::tracing::$level!(
             event = $event,
             $($k = %$v,)*
         );
     }};
+    // With explicit ? formatter
     ($level:ident, $event:expr $(, $k:ident = ?$v:expr)* $(,)?) => {{
         $crate::tracing::$level!(
             event = $event,
             $($k = ?$v,)*
         );
     }};
+    // Default: use Debug formatter
     ($level:ident, $event:expr $(, $k:ident = $v:expr)* $(,)?) => {{
         $crate::tracing::$level!(
             event = $event,
-            $($k = %$v,)*
+            $($k = ?$v,)*
         );
     }};
 }
