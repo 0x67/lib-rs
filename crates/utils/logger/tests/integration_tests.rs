@@ -68,8 +68,8 @@ fn test_logging_with_fields() {
     // Allow the test to pass if logger is already initialized
     let _guard = setup_logging("test_app", None, config, None).ok();
 
-    logger::info!(user_id = 123, "User logged in");
-    logger::error!(error = "connection timeout", "Failed to connect");
+    logger::info!("User logged in", user_id = 123,);
+    logger::error!("Failed to connect", error = "connection timeout",);
 }
 
 #[test]

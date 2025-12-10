@@ -241,15 +241,22 @@ impl TaskManager {
 
         // Check for conflicts
         if let Err(errors) = allocator.validate() {
-            warn!("Core allocation conflicts detected:");
+            warn!("core.allocation.conflicts_detected", count = errors.len());
+
             for error in &errors {
-                warn!("  {}", error);
+                warn!("core.allocation.conflict", error = error);
             }
-            warn!("Multiple tasks will share the same CPU core, which may impact performance");
+
+            warn!(
+                "core.allocation.performance_warning",
+                message = "Multiple tasks will share the same CPU core",
+            );
         }
 
-        // Log allocation report
-        info!("{}", allocator.get_allocation_report());
+        info!(
+            "core.allocation.report",
+            report = allocator.get_allocation_report()
+        );
 
         Ok(allocator)
     }
@@ -271,9 +278,13 @@ async fn supervise(
                 // fixed always works regardless of instance_index
                 if let Some(core) = core_ids.into_iter().find(|c| c.id == id) {
                     core_affinity::set_for_current(core);
-                    info!(task = %task_name, core = id, "pinned to specific core");
+                    info!("subsystem.started", task = task_name, core = id);
                 } else {
-                    error!(task = %task_name, core = id, "requested core not available");
+                    error!(
+                        "subsystem.failed",
+                        task = task_name,
+                        message = format!("requested core {} is not available", id)
+                    );
                 }
             }
 
@@ -284,18 +295,27 @@ async fn supervise(
                     .collect();
 
                 if range.is_empty() {
-                    error!(task = %task_name, "no cores in requested range {}-{}", start, end);
+                    error!(
+                        "subsystem.failed",
+                        task = task_name,
+                        message = format!("no cores available in range {}-{}", start, end)
+                    );
                 } else if let Some(i) = instance_index {
                     // for multi-instance: distribute across range
                     if let Some(core) = range.get(i % range.len()) {
                         core_affinity::set_for_current(*core);
-                        info!(task = %task_name, core = core.id, instance = i, "pinned to core in range");
+                        info!(
+                            "subsystem.started",
+                            task = task_name,
+                            core = core.id,
+                            instance = i
+                        );
                     }
                 } else {
                     // for single instance: use first core in range
                     if let Some(core) = range.first() {
                         core_affinity::set_for_current(*core);
-                        info!(task = %task_name, core = core.id, "single task pinned to first core in range");
+                        info!("subsystem.started", task = task_name, core = core.id);
                     }
                 }
             }
@@ -305,26 +325,38 @@ async fn supervise(
                     // for multi-instance: round-robin across all cores
                     if let Some(core) = core_ids.get(i % core_ids.len()) {
                         core_affinity::set_for_current(*core);
-                        info!(task = %task_name, core = core.id, instance = i, "auto-pinned by index");
+                        info!(
+                            "subsystem.started",
+                            task = task_name,
+                            core = core.id,
+                            instance = i
+                        );
                     }
                 } else {
                     // for single instance: Auto doesn't make sense, warn and skip
-                    error!(task = %task_name, "Auto affinity not supported for single instance tasks, use Fixed or Range");
+                    error!(
+                        "subsystem.failed",
+                        task = task_name,
+                        message = "Auto affinity not supported for single instance tasks, use Fixed or Range"
+                    );
                 }
             }
         }
     }
 
-    info!(task = %task_name, "starting subsystem");
-
     let res = task.run(token).await;
     let _ = task.on_shutdown().await;
 
-    info!(task = %task_name, "subsystem stopped");
+    info!("subsystem.stopped", task = task_name);
 
     if !shutdown_on_error {
         if let Err(ref e) = res {
-            error!(task = %task_name, ?e, "task failed but shutdown_on_error=false");
+            error!(
+                "subsystem.failed",
+                task = task_name,
+                error = e,
+                message = "task failed but shutdown_on_error=false"
+            );
         }
         Ok(())
     } else {

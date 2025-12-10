@@ -1,6 +1,7 @@
 pub mod config;
 #[cfg(feature = "file")]
 pub mod file;
+pub mod macros;
 #[cfg(feature = "otel")]
 pub mod otel;
 pub mod tracing_unwrap;
@@ -14,10 +15,11 @@ pub use crate::util::{utc_offset_hms, utc_offset_hours};
 pub use config::*;
 pub use time::UtcOffset;
 use time::{format_description::BorrowedFormatItem, macros::format_description};
-pub use tracing::{
-    Level, debug, debug_span, error, error_span, info, info_span, instrument, span, trace,
-    trace_span, warn, warn_span,
-};
+pub use tracing::{Level, instrument, span};
+
+// Re-export tracing for macro usage
+#[doc(hidden)]
+pub use tracing;
 
 #[cfg(feature = "otel")]
 use tracing_opentelemetry::OpenTelemetryLayer;
