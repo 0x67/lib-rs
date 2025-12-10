@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/0x67/lib-rs/compare/logger-v0.1.6...logger-v0.1.7) (2025-12-10)
+
+
+### Features
+
+* **logger:** update macros ([b6e2dc1](https://github.com/0x67/lib-rs/commit/b6e2dc118fcc98e894c36c28bbc58eafcd1836af))
+
 ## [0.1.6](https://github.com/0x67/lib-rs/compare/logger-v0.1.5...logger-v0.1.6) (2025-12-10)
 
 
