@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/0x67/lib-rs/compare/http-client-v0.1.2...http-client-v0.1.3) (2025-12-11)
+
+
+### Features
+
+* **http-client:** added support for ssl pinning ([458b61a](https://github.com/0x67/lib-rs/commit/458b61a547d0461270959ab98ef76b3b5ab15cfe))
+
 ## [0.1.2](https://github.com/0x67/lib-rs/compare/http-client-v0.1.1...http-client-v0.1.2) (2025-12-07)
 
 
