@@ -297,7 +297,7 @@ dependencies = [
 
 [[package]]
 name = "config-loader"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "_workspace-hack",
  "async-trait",
@@ -717,7 +717,7 @@ dependencies = [
 
 [[package]]
 name = "http-client"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "async-trait",
  "http",

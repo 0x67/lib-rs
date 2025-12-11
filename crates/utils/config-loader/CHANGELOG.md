@@ -1,5 +1,7 @@
 # Changelog
 
+## [0.1.3](https://github.com/0x67/lib-rs/compare/config-loader-v0.1.2...config-loader-v0.1.3) (2025-12-11)
+
 ## [0.1.2](https://github.com/0x67/lib-rs/compare/config-loader-v0.1.1...config-loader-v0.1.2) (2025-12-07)
 
 
