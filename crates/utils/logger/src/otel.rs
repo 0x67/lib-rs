@@ -3,13 +3,15 @@ use crate::{
     SetupLoggingKind,
 };
 use opentelemetry::trace::TracerProvider;
-use opentelemetry_otlp::{Protocol, WithExportConfig, WithTonicConfig};
+use opentelemetry_otlp::{Protocol, WithExportConfig, WithHttpConfig, WithTonicConfig};
 use opentelemetry_sdk::{
     Resource,
     trace::{RandomIdGenerator, Sampler},
 };
 pub use time::UtcOffset;
 use tracing_subscriber::Registry;
+
+use crate::ProtocolConfig;
 
 pub fn setup_otel(
     app_name: String,
@@ -38,26 +40,48 @@ pub fn setup_otel(
         .unwrap_or(Sampler::AlwaysOn);
 
     // Setup trace exporter for spans with timeout
-    let mut trace_exporter_builder = opentelemetry_otlp::SpanExporter::builder()
-        .with_tonic()
-        .with_endpoint(&otel_endpoint)
-        .with_protocol(Protocol::Grpc)
-        .with_timeout(timeout);
+    let trace_exporter = match otel_config.protocol {
+        ProtocolConfig::Grpc => {
+            let mut builder = opentelemetry_otlp::SpanExporter::builder()
+                .with_tonic()
+                .with_endpoint(&otel_endpoint)
+                .with_protocol(Protocol::Grpc)
+                .with_timeout(timeout);
 
-    if let Some(headers) = &headers {
-        let mut metadata = tonic::metadata::MetadataMap::new();
-        for (key, value) in headers {
-            if let (Ok(key), Ok(value)) = (
-                tonic::metadata::MetadataKey::from_bytes(key.as_bytes()),
-                tonic::metadata::MetadataValue::try_from(value.as_str()),
-            ) {
-                metadata.insert(key, value);
+            if let Some(headers) = &headers {
+                let mut metadata = tonic::metadata::MetadataMap::new();
+                for (key, value) in headers {
+                    if let (Ok(key), Ok(value)) = (
+                        tonic::metadata::MetadataKey::from_bytes(key.as_bytes()),
+                        tonic::metadata::MetadataValue::try_from(value.as_str()),
+                    ) {
+                        metadata.insert(key, value);
+                    }
+                }
+                builder = builder.with_metadata(metadata);
             }
-        }
-        trace_exporter_builder = trace_exporter_builder.with_metadata(metadata);
-    }
 
-    let trace_exporter = trace_exporter_builder.build().map_err(|e| {
+            builder.build()
+        }
+        ProtocolConfig::Http => {
+            let mut builder = opentelemetry_otlp::SpanExporter::builder()
+                .with_http()
+                .with_endpoint(&otel_endpoint)
+                .with_protocol(Protocol::HttpBinary)
+                .with_timeout(timeout);
+
+            if let Some(headers) = &headers {
+                let mut header_map = std::collections::HashMap::new();
+                for (key, value) in headers {
+                    header_map.insert(key.clone(), value.clone());
+                }
+                builder = builder.with_headers(header_map);
+            }
+
+            builder.build()
+        }
+    }
+    .map_err(|e| {
         SetupLogging::new(SetupLoggingKind::OtelExporter {
             source: OtelExporterError::new(OtelExporterErrorKind::BuildSpanExporter {
                 source: Box::new(e),
@@ -65,10 +89,17 @@ pub fn setup_otel(
         })
     })?;
 
-    // Create resource with service name
-    let resource = Resource::builder()
-        .with_service_name(app_name.clone())
-        .build();
+    // Create resource with service name and custom attributes
+    let mut resource_builder = Resource::builder().with_service_name(app_name.clone());
+
+    if let Some(attributes) = &otel_config.attributes {
+        for (key, value) in attributes {
+            resource_builder = resource_builder
+                .with_attribute(opentelemetry::KeyValue::new(key.clone(), value.clone()));
+        }
+    }
+
+    let resource = resource_builder.build();
 
     // Configure batch span processor with configurable settings
     let batch_config = opentelemetry_sdk::trace::BatchConfigBuilder::default()
@@ -93,26 +124,48 @@ pub fn setup_otel(
     opentelemetry::global::set_tracer_provider(tracer_provider.clone());
 
     // Setup log exporter with timeout
-    let mut log_exporter_builder = opentelemetry_otlp::LogExporter::builder()
-        .with_tonic()
-        .with_endpoint(&otel_endpoint)
-        .with_protocol(Protocol::Grpc)
-        .with_timeout(timeout);
+    let log_exporter = match otel_config.protocol {
+        ProtocolConfig::Grpc => {
+            let mut builder = opentelemetry_otlp::LogExporter::builder()
+                .with_tonic()
+                .with_endpoint(&otel_endpoint)
+                .with_protocol(Protocol::Grpc)
+                .with_timeout(timeout);
 
-    if let Some(headers) = &headers {
-        let mut metadata = tonic::metadata::MetadataMap::new();
-        for (key, value) in headers {
-            if let (Ok(key), Ok(value)) = (
-                tonic::metadata::MetadataKey::from_bytes(key.as_bytes()),
-                tonic::metadata::MetadataValue::try_from(value.as_str()),
-            ) {
-                metadata.insert(key, value);
+            if let Some(headers) = &headers {
+                let mut metadata = tonic::metadata::MetadataMap::new();
+                for (key, value) in headers {
+                    if let (Ok(key), Ok(value)) = (
+                        tonic::metadata::MetadataKey::from_bytes(key.as_bytes()),
+                        tonic::metadata::MetadataValue::try_from(value.as_str()),
+                    ) {
+                        metadata.insert(key, value);
+                    }
+                }
+                builder = builder.with_metadata(metadata);
             }
-        }
-        log_exporter_builder = log_exporter_builder.with_metadata(metadata);
-    }
 
-    let log_exporter = log_exporter_builder.build().map_err(|e| {
+            builder.build()
+        }
+        ProtocolConfig::Http => {
+            let mut builder = opentelemetry_otlp::LogExporter::builder()
+                .with_http()
+                .with_endpoint(&otel_endpoint)
+                .with_protocol(Protocol::HttpBinary)
+                .with_timeout(timeout);
+
+            if let Some(headers) = &headers {
+                let mut header_map = std::collections::HashMap::new();
+                for (key, value) in headers {
+                    header_map.insert(key.clone(), value.clone());
+                }
+                builder = builder.with_headers(header_map);
+            }
+
+            builder.build()
+        }
+    }
+    .map_err(|e| {
         SetupLogging::new(SetupLoggingKind::OtelExporter {
             source: OtelExporterError::new(OtelExporterErrorKind::BuildLogExporter {
                 source: Box::new(e),
@@ -137,26 +190,48 @@ pub fn setup_otel(
         .build();
 
     // Setup metrics exporter with timeout
-    let mut metric_exporter_builder = opentelemetry_otlp::MetricExporter::builder()
-        .with_tonic()
-        .with_endpoint(&otel_endpoint)
-        .with_protocol(Protocol::Grpc)
-        .with_timeout(timeout);
+    let metric_exporter = match otel_config.protocol {
+        ProtocolConfig::Grpc => {
+            let mut builder = opentelemetry_otlp::MetricExporter::builder()
+                .with_tonic()
+                .with_endpoint(&otel_endpoint)
+                .with_protocol(Protocol::Grpc)
+                .with_timeout(timeout);
 
-    if let Some(headers) = &headers {
-        let mut metadata = tonic::metadata::MetadataMap::new();
-        for (key, value) in headers {
-            if let (Ok(key), Ok(value)) = (
-                tonic::metadata::MetadataKey::from_bytes(key.as_bytes()),
-                tonic::metadata::MetadataValue::try_from(value.as_str()),
-            ) {
-                metadata.insert(key, value);
+            if let Some(headers) = &headers {
+                let mut metadata = tonic::metadata::MetadataMap::new();
+                for (key, value) in headers {
+                    if let (Ok(key), Ok(value)) = (
+                        tonic::metadata::MetadataKey::from_bytes(key.as_bytes()),
+                        tonic::metadata::MetadataValue::try_from(value.as_str()),
+                    ) {
+                        metadata.insert(key, value);
+                    }
+                }
+                builder = builder.with_metadata(metadata);
             }
-        }
-        metric_exporter_builder = metric_exporter_builder.with_metadata(metadata);
-    }
 
-    let metric_exporter = metric_exporter_builder.build().map_err(|e| {
+            builder.build()
+        }
+        ProtocolConfig::Http => {
+            let mut builder = opentelemetry_otlp::MetricExporter::builder()
+                .with_http()
+                .with_endpoint(&otel_endpoint)
+                .with_protocol(Protocol::HttpBinary)
+                .with_timeout(timeout);
+
+            if let Some(headers) = &headers {
+                let mut header_map = std::collections::HashMap::new();
+                for (key, value) in headers {
+                    header_map.insert(key.clone(), value.clone());
+                }
+                builder = builder.with_headers(header_map);
+            }
+
+            builder.build()
+        }
+    }
+    .map_err(|e| {
         SetupLogging::new(SetupLoggingKind::OtelExporter {
             source: OtelExporterError::new(OtelExporterErrorKind::BuildMetricExporter {
                 source: Box::new(e),

@@ -91,6 +91,11 @@ pub struct OtelConfig {
     /// OpenTelemetry collector endpoint
     pub endpoint: String,
     pub headers: Option<std::collections::HashMap<String, String>>,
+    /// Custom resource attributes (e.g., app.environment, app.mode)
+    pub attributes: Option<std::collections::HashMap<String, String>>,
+    /// Protocol to use for exporting (grpc or http)
+    #[serde(default = "default_protocol")]
+    pub protocol: ProtocolConfig,
 
     /// Enable OpenTelemetry exporter
     pub enabled: bool,
@@ -114,6 +119,20 @@ pub struct OtelConfig {
     /// Maximum attributes per span
     #[serde(default = "default_max_attributes_per_span")]
     pub max_attributes_per_span: u32,
+}
+
+#[cfg(feature = "otel")]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum ProtocolConfig {
+    #[default]
+    Grpc,
+    Http,
+}
+
+#[cfg(feature = "otel")]
+fn default_protocol() -> ProtocolConfig {
+    ProtocolConfig::Grpc
 }
 
 #[cfg(feature = "otel")]
@@ -152,6 +171,8 @@ impl Default for OtelConfig {
         Self {
             endpoint: "http://localhost:4317".to_string(),
             headers: None,
+            attributes: None,
+            protocol: ProtocolConfig::Grpc,
             enabled: false,
             sampler: Some(SamplerConfig::default()),
             timeout_secs: default_timeout_secs(),
