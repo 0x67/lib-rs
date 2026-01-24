@@ -1,5 +1,7 @@
 # Changelog
 
+## [0.1.10](https://github.com/0x67/lib-rs/compare/task-manager-v0.1.9...task-manager-v0.1.10) (2026-01-24)
+
 ## [0.1.9](https://github.com/0x67/lib-rs/compare/task-manager-v0.1.8...task-manager-v0.1.9) (2025-12-10)
 
 ## [0.1.8](https://github.com/0x67/lib-rs/compare/task-manager-v0.1.7...task-manager-v0.1.8) (2025-12-10)
