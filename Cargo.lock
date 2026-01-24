@@ -303,7 +303,7 @@ dependencies = [
 
 [[package]]
 name = "config-loader"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "_workspace-hack",
  "async-trait",
@@ -733,7 +733,7 @@ dependencies = [
 
 [[package]]
 name = "http-client"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "async-trait",
  "http",
@@ -1057,7 +1057,7 @@ checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
 
 [[package]]
 name = "logger"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "anyhow",
  "opentelemetry 0.31.0",
@@ -2171,7 +2171,7 @@ dependencies = [
 
 [[package]]
 name = "task-manager"
-version = "0.1.14"
+version = "0.1.15"
 dependencies = [
  "_workspace-hack",
  "async-trait",

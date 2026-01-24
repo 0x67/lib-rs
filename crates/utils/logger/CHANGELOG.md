@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.15](https://github.com/0x67/lib-rs/compare/logger-v0.1.14...logger-v0.1.15) (2026-01-24)
+
+
+### Bug Fixes
+
+* reqwest conflicting deps ([47c5faa](https://github.com/0x67/lib-rs/commit/47c5faae16b06730347f65b842892bf719760def))
+
 ## [0.1.14](https://github.com/0x67/lib-rs/compare/logger-v0.1.13...logger-v0.1.14) (2026-01-24)
 
 
