@@ -22,7 +22,6 @@ otel = [
     "dep:tracing-opentelemetry",
     "dep:tokio",
     "dep:tonic",
-    "dep:reqwest",
 ]
 sysinfo = ["dep:sysinfo"]
 
@@ -59,9 +58,6 @@ opentelemetry-semantic-conventions = { workspace = true, optional = true }
 opentelemetry-stdout = { workspace = true, optional = true }
 opentelemetry_sdk = { workspace = true, optional = true, features = [
   "rt-tokio",
-] }
-reqwest = { workspace = true, optional = true, default-features = false, features = [
-  "rustls",
 ] }
 sysinfo = { workspace = true, optional = true, features = [
   "network",
