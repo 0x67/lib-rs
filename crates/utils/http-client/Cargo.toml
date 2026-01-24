@@ -17,7 +17,7 @@ opentelemetry = { workspace = true, default-features = false, features = [
   "trace",
 ] }
 reqwest = { workspace = true, features = [
-  "rustls-tls",
+  "rustls",
   "gzip",
   "brotli",
   "deflate",
