@@ -8,6 +8,7 @@ use opentelemetry_sdk::{
     Resource,
     trace::{RandomIdGenerator, Sampler},
 };
+use std::convert::TryFrom;
 pub use time::UtcOffset;
 use tracing_subscriber::Registry;
 
@@ -64,9 +65,14 @@ pub fn setup_otel(
             builder.build()
         }
         ProtocolConfig::Http => {
+            let endpoint = if let Some(path) = &otel_config.traces_path {
+                format!("{}{}", &otel_endpoint, path)
+            } else {
+                otel_endpoint.clone()
+            };
             let mut builder = opentelemetry_otlp::SpanExporter::builder()
                 .with_http()
-                .with_endpoint(&otel_endpoint)
+                .with_endpoint(&endpoint)
                 .with_protocol(Protocol::HttpBinary)
                 .with_timeout(timeout);
 
@@ -148,9 +154,14 @@ pub fn setup_otel(
             builder.build()
         }
         ProtocolConfig::Http => {
+            let endpoint = if let Some(path) = &otel_config.logs_path {
+                format!("{}{}", &otel_endpoint, path)
+            } else {
+                otel_endpoint.clone()
+            };
             let mut builder = opentelemetry_otlp::LogExporter::builder()
                 .with_http()
-                .with_endpoint(&otel_endpoint)
+                .with_endpoint(&endpoint)
                 .with_protocol(Protocol::HttpBinary)
                 .with_timeout(timeout);
 
@@ -214,9 +225,14 @@ pub fn setup_otel(
             builder.build()
         }
         ProtocolConfig::Http => {
+            let endpoint = if let Some(path) = &otel_config.metrics_path {
+                format!("{}{}", &otel_endpoint, path)
+            } else {
+                otel_endpoint.clone()
+            };
             let mut builder = opentelemetry_otlp::MetricExporter::builder()
                 .with_http()
-                .with_endpoint(&otel_endpoint)
+                .with_endpoint(&endpoint)
                 .with_protocol(Protocol::HttpBinary)
                 .with_timeout(timeout);
 

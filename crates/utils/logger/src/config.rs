@@ -88,8 +88,14 @@ impl Default for FileConfig {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct OtelConfig {
-    /// OpenTelemetry collector endpoint
+    /// OpenTelemetry collector endpoint (base URL)
     pub endpoint: String,
+    /// Optional path suffix for traces endpoint (e.g., "/v1/traces")
+    pub traces_path: Option<String>,
+    /// Optional path suffix for logs endpoint (e.g., "/v1/logs")
+    pub logs_path: Option<String>,
+    /// Optional path suffix for metrics endpoint (e.g., "/v1/metrics")
+    pub metrics_path: Option<String>,
     pub headers: Option<std::collections::HashMap<String, String>>,
     /// Custom resource attributes (e.g., app.environment, app.mode)
     pub attributes: Option<std::collections::HashMap<String, String>>,
@@ -170,6 +176,9 @@ impl Default for OtelConfig {
     fn default() -> Self {
         Self {
             endpoint: "http://localhost:4317".to_string(),
+            traces_path: None,
+            logs_path: None,
+            metrics_path: None,
             headers: None,
             attributes: None,
             protocol: ProtocolConfig::Grpc,
