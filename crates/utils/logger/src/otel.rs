@@ -65,10 +65,17 @@ pub fn setup_otel(
         })
     })?;
 
-    // Create resource with service name
-    let resource = Resource::builder()
-        .with_service_name(app_name.clone())
-        .build();
+    // Create resource with service name and custom attributes
+    let mut resource_builder = Resource::builder().with_service_name(app_name.clone());
+
+    if let Some(attributes) = &otel_config.attributes {
+        for (key, value) in attributes {
+            resource_builder = resource_builder
+                .with_attribute(opentelemetry::KeyValue::new(key.clone(), value.clone()));
+        }
+    }
+
+    let resource = resource_builder.build();
 
     // Configure batch span processor with configurable settings
     let batch_config = opentelemetry_sdk::trace::BatchConfigBuilder::default()
