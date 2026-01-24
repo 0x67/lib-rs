@@ -303,6 +303,7 @@ pub fn setup_logging(
     timezone_offset: Option<i8>,
     logger_config: LoggerConfig,
     env_filter_override: Option<Vec<&str>>,
+    #[cfg(feature = "otel")] http_client: Option<reqwest::Client>,
 ) -> Result<LoggingGuard, SetupLogging> {
     #[cfg_attr(not(any(feature = "file", feature = "otel")), allow(unused_variables))]
     let app_name: String = app_name.into();
@@ -343,7 +344,7 @@ pub fn setup_logging(
     let (registry, tracer_provider, logger_provider, meter_provider) = {
         if let Some(otel_config) = logger_config.otel.as_ref() {
             let (otel_layer, tracer, logger, meter) =
-                setup_otel(app_name.clone(), otel_config.clone())?;
+                setup_otel(app_name.clone(), otel_config.clone(), http_client)?;
             let bridge =
                 opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge::new(&logger);
             (

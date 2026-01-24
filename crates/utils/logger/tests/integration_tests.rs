@@ -3,7 +3,7 @@ use logger::{Level, LoggerConfig, setup_logging};
 #[test]
 fn test_setup_logging_basic() {
     let config = LoggerConfig::default();
-    let result = setup_logging("test_app", None, config, None);
+    let result = setup_logging("test_app", None, config, None, None);
     // Allow test to pass if dispatcher is already set
     assert!(result.is_ok() || result.is_err());
 }
@@ -11,7 +11,7 @@ fn test_setup_logging_basic() {
 #[test]
 fn test_setup_logging_with_timezone() {
     let config = LoggerConfig::default();
-    let result = setup_logging("test_app", Some(8), config, None);
+    let result = setup_logging("test_app", Some(8), config, None, None);
     // Allow test to pass if dispatcher is already set
     assert!(result.is_ok() || result.is_err());
 }
@@ -19,7 +19,7 @@ fn test_setup_logging_with_timezone() {
 #[test]
 fn test_setup_logging_with_env_filter() {
     let config = LoggerConfig::default();
-    let result = setup_logging("test_app", None, config, Some(vec!["debug"]));
+    let result = setup_logging("test_app", None, config, Some(vec!["debug"]), None);
     // Allow test to pass if dispatcher is already set
     assert!(result.is_ok() || result.is_err());
 }
@@ -28,7 +28,7 @@ fn test_setup_logging_with_env_filter() {
 fn test_setup_logging_with_custom_level() {
     let mut config = LoggerConfig::default();
     config.max_level = "DEBUG".to_string();
-    let result = setup_logging("test_app", None, config, None);
+    let result = setup_logging("test_app", None, config, None, None);
     // Allow test to pass if dispatcher is already set
     assert!(result.is_ok() || result.is_err());
 }
@@ -36,7 +36,13 @@ fn test_setup_logging_with_custom_level() {
 #[test]
 fn test_setup_logging_invalid_env_filter() {
     let config = LoggerConfig::default();
-    let result = setup_logging("test_app", None, config, Some(vec!["invalid[[filter"]));
+    let result = setup_logging(
+        "test_app",
+        None,
+        config,
+        Some(vec!["invalid[[filter"]),
+        None,
+    );
     assert!(result.is_err());
 }
 
@@ -53,7 +59,7 @@ fn test_level_parsing() {
 fn test_logging_macros() {
     let config = LoggerConfig::default();
     // Allow the test to pass if logger is already initialized
-    let _guard = setup_logging("test_app", None, config, None).ok();
+    let _guard = setup_logging("test_app", None, config, None, None).ok();
 
     logger::info!("Test info message");
     logger::debug!("Test debug message");
@@ -66,7 +72,7 @@ fn test_logging_macros() {
 fn test_logging_with_fields() {
     let config = LoggerConfig::default();
     // Allow the test to pass if logger is already initialized
-    let _guard = setup_logging("test_app", None, config, None).ok();
+    let _guard = setup_logging("test_app", None, config, None, None).ok();
 
     logger::info!("User logged in", user_id = 123,);
     logger::error!("Failed to connect", error = "connection timeout",);
@@ -76,7 +82,7 @@ fn test_logging_with_fields() {
 fn test_logging_guard_drop() {
     let config = LoggerConfig::default();
     // Allow the test to pass if logger is already initialized
-    if let Ok(guard) = setup_logging("test_app", None, config, None) {
+    if let Ok(guard) = setup_logging("test_app", None, config, None, None) {
         drop(guard);
     }
 }
@@ -93,7 +99,7 @@ fn test_setup_logging_with_file_missing_config() {
         config.otel = None;
     }
 
-    let result = setup_logging("test_app", None, config, None);
+    let result = setup_logging("test_app", None, config, None, None);
     // Should succeed without file logging when file config is None
     // Allow test to pass if dispatcher is already set
     assert!(result.is_ok() || result.is_err());
@@ -123,7 +129,7 @@ fn test_setup_logging_with_file_config() {
         config.otel = None;
     }
 
-    let result = setup_logging("test_file_app", None, config, None);
+    let result = setup_logging("test_file_app", None, config, None, None);
     // Allow test to pass if dispatcher is already set
     if let Ok(guard) = result {
         logger::info!("Test file logging");
@@ -141,6 +147,7 @@ fn test_multiple_directives() {
         None,
         config,
         Some(vec!["info", "my_crate=debug", "other_crate=trace"]),
+        None,
     );
     // Allow test to pass if dispatcher is already set
     assert!(result.is_ok() || result.is_err());
@@ -174,7 +181,7 @@ fn test_format_config_variations() {
         let mut config = LoggerConfig::default();
         config.max_level = "INFO".to_string();
         config.format = Some(format);
-        let result = setup_logging("test_app", None, config, None);
+        let result = setup_logging("test_app", None, config, None, None);
         // Allow test to pass if dispatcher is already set from previous iteration
         assert!(result.is_ok() || result.is_err());
     }

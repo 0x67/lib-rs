@@ -74,7 +74,7 @@ pub fn setup_logging(app_data_dir: PathBuf) -> Result<logger::LoggingGuard, Logg
     }
 
     // Initialize logger and return the guard
-    let guard = logger::setup_logging("titan-app", None, config, None)?;
+    let guard = logger::setup_logging("titan-app", None, config, None, None)?;
 
     Ok(guard)
 }
@@ -128,7 +128,7 @@ mod tests {
 
         config.file = Some(file_config);
 
-        let _guard = logger::setup_logging("titan-app", None, config, None)
+        let _guard = logger::setup_logging("titan-app", None, config, None, None)
             .expect("Failed to setup logging in release mode");
 
         // Test that logging works
@@ -166,7 +166,7 @@ mod tests {
         file_config.enabled = true;
         config.file = Some(file_config);
 
-        let _guard = logger::setup_logging("titan-app", None, config, None)
+        let _guard = logger::setup_logging("titan-app", None, config, None, None)
             .expect("Failed to setup logging with both stdout and file");
 
         info!("Test message to both stdout and file");
@@ -196,7 +196,7 @@ mod tests {
         file_config.enabled = false; // Disabled!
         config.file = Some(file_config);
 
-        let _guard = logger::setup_logging("titan-app", None, config, None)
+        let _guard = logger::setup_logging("titan-app", None, config, None, None)
             .expect("Failed to setup logging with disabled file");
 
         info!("This should only go to stdout");
@@ -216,7 +216,7 @@ mod tests {
         config.format = None; // No stdout
         config.file = None; // No file
 
-        let _guard = logger::setup_logging("titan-app", None, config, None)
+        let _guard = logger::setup_logging("titan-app", None, config, None, None)
             .expect("Failed to setup logging with nothing enabled");
 
         // These logs go nowhere, but shouldn't crash

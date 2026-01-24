@@ -17,6 +17,7 @@ use crate::ProtocolConfig;
 pub fn setup_otel(
     app_name: String,
     otel_config: OtelConfig,
+    http_client: Option<reqwest::Client>,
 ) -> Result<
     (
         OpenTelemetryLayer<Registry, opentelemetry_sdk::trace::Tracer>,
@@ -75,6 +76,10 @@ pub fn setup_otel(
                 .with_endpoint(&endpoint)
                 .with_protocol(Protocol::HttpBinary)
                 .with_timeout(timeout);
+
+            if let Some(client) = &http_client {
+                builder = builder.with_http_client(client.clone());
+            }
 
             if let Some(headers) = &headers {
                 let mut header_map = std::collections::HashMap::new();
@@ -165,6 +170,10 @@ pub fn setup_otel(
                 .with_protocol(Protocol::HttpBinary)
                 .with_timeout(timeout);
 
+            if let Some(client) = &http_client {
+                builder = builder.with_http_client(client.clone());
+            }
+
             if let Some(headers) = &headers {
                 let mut header_map = std::collections::HashMap::new();
                 for (key, value) in headers {
@@ -235,6 +244,10 @@ pub fn setup_otel(
                 .with_endpoint(&endpoint)
                 .with_protocol(Protocol::HttpBinary)
                 .with_timeout(timeout);
+
+            if let Some(client) = &http_client {
+                builder = builder.with_http_client(client.clone());
+            }
 
             if let Some(headers) = &headers {
                 let mut header_map = std::collections::HashMap::new();
