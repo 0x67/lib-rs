@@ -159,6 +159,7 @@ pub fn setup_otel(
             } else {
                 otel_endpoint.clone()
             };
+
             let mut builder = opentelemetry_otlp::LogExporter::builder()
                 .with_http()
                 .with_endpoint(&endpoint)
@@ -230,6 +231,7 @@ pub fn setup_otel(
             } else {
                 otel_endpoint.clone()
             };
+
             let mut builder = opentelemetry_otlp::MetricExporter::builder()
                 .with_http()
                 .with_endpoint(&endpoint)
