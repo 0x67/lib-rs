@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.14](https://github.com/0x67/lib-rs/compare/logger-v0.1.13...logger-v0.1.14) (2026-01-24)
+
+
+### Bug Fixes
+
+* update deps ([599f7f4](https://github.com/0x67/lib-rs/commit/599f7f4dafb07afdb7f9b371a3f3384837602fd4))
+
 ## [0.1.13](https://github.com/0x67/lib-rs/compare/logger-v0.1.12...logger-v0.1.13) (2026-01-24)
 
 
