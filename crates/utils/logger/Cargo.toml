@@ -60,8 +60,8 @@ opentelemetry-stdout = { workspace = true, optional = true }
 opentelemetry_sdk = { workspace = true, optional = true, features = [
   "rt-tokio",
 ] }
-reqwest = { workspace = true, optional = true, default-features = false, features = [
-  "rustls",
+reqwest = { workspace = true, optional = true, features = [
+  "rustls-tls",
   "json",
 ] }
 sysinfo = { workspace = true, optional = true, features = [
