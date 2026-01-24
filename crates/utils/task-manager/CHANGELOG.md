@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.13](https://github.com/0x67/lib-rs/compare/task-manager-v0.1.12...task-manager-v0.1.13) (2026-01-24)
+
+
+### Bug Fixes
+
+* trigger release ([e17eaff](https://github.com/0x67/lib-rs/commit/e17eaff17d4ad33799abfe1afb721cffaccb4a08))
+
 ## [0.1.12](https://github.com/0x67/lib-rs/compare/task-manager-v0.1.11...task-manager-v0.1.12) (2026-01-24)
 
 ## [0.1.11](https://github.com/0x67/lib-rs/compare/task-manager-v0.1.10...task-manager-v0.1.11) (2026-01-24)
