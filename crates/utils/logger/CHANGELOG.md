@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.11](https://github.com/0x67/lib-rs/compare/logger-v0.1.10...logger-v0.1.11) (2026-01-24)
+
+
+### Features
+
+* added custom attributes and http support ([#27](https://github.com/0x67/lib-rs/issues/27)) ([b2c3d68](https://github.com/0x67/lib-rs/commit/b2c3d68292d292b8c5da74f0a010e64230bc356d))
+
 ## [0.1.10](https://github.com/0x67/lib-rs/compare/logger-v0.1.9...logger-v0.1.10) (2026-01-24)
 
 
