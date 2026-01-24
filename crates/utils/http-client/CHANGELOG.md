@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/0x67/lib-rs/compare/http-client-v0.1.4...http-client-v0.1.5) (2026-01-24)
+
+
+### Bug Fixes
+
+* reqwest conflicting deps ([47c5faa](https://github.com/0x67/lib-rs/commit/47c5faae16b06730347f65b842892bf719760def))
+
 ## [0.1.4](https://github.com/0x67/lib-rs/compare/http-client-v0.1.3...http-client-v0.1.4) (2026-01-24)
 
 
