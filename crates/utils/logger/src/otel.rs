@@ -234,9 +234,10 @@ pub fn setup_otel(
             } else {
                 otel_endpoint.clone()
             };
-
+            let http_client = reqwest::Client::new();
             let mut builder = opentelemetry_otlp::MetricExporter::builder()
                 .with_http()
+                .with_http_client(http_client)
                 .with_endpoint(&endpoint)
                 .with_protocol(Protocol::HttpBinary)
                 .with_timeout(timeout);
