@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.10](https://github.com/0x67/lib-rs/compare/logger-v0.1.9...logger-v0.1.10) (2026-01-24)
+
+
+### Features
+
+* added headers config to otel ([#25](https://github.com/0x67/lib-rs/issues/25)) ([7a3336b](https://github.com/0x67/lib-rs/commit/7a3336b45833fa413896d78328f980fa31356bd6))
+
 ## [0.1.9](https://github.com/0x67/lib-rs/compare/logger-v0.1.8...logger-v0.1.9) (2025-12-10)
 
 
