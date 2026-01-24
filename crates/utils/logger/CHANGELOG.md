@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.12](https://github.com/0x67/lib-rs/compare/logger-v0.1.11...logger-v0.1.12) (2026-01-24)
+
+
+### Bug Fixes
+
+* otel http exporter missing http client ([#29](https://github.com/0x67/lib-rs/issues/29)) ([5590f7f](https://github.com/0x67/lib-rs/commit/5590f7f0cfc373ef38a0ffd634bdc138edb9fac0))
+
 ## [0.1.11](https://github.com/0x67/lib-rs/compare/logger-v0.1.10...logger-v0.1.11) (2026-01-24)
 
 
