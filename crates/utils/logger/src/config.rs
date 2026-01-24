@@ -90,6 +90,8 @@ impl Default for FileConfig {
 pub struct OtelConfig {
     /// OpenTelemetry collector endpoint
     pub endpoint: String,
+    pub headers: Option<std::collections::HashMap<String, String>>,
+
     /// Enable OpenTelemetry exporter
     pub enabled: bool,
     /// Trace sampler configuration
@@ -149,6 +151,7 @@ impl Default for OtelConfig {
     fn default() -> Self {
         Self {
             endpoint: "http://localhost:4317".to_string(),
+            headers: None,
             enabled: false,
             sampler: Some(SamplerConfig::default()),
             timeout_secs: default_timeout_secs(),

@@ -3,7 +3,7 @@ use crate::{
     SetupLoggingKind,
 };
 use opentelemetry::trace::TracerProvider;
-use opentelemetry_otlp::{Protocol, WithExportConfig};
+use opentelemetry_otlp::{Protocol, WithExportConfig, WithTonicConfig};
 use opentelemetry_sdk::{
     Resource,
     trace::{RandomIdGenerator, Sampler},
@@ -24,6 +24,7 @@ pub fn setup_otel(
     SetupLogging,
 > {
     let otel_endpoint = otel_config.endpoint.clone();
+    let headers = otel_config.headers.clone();
     let timeout = otel_config.timeout();
     let max_queue_size = otel_config.max_queue_size;
     let scheduled_delay = otel_config.scheduled_delay();
@@ -37,19 +38,32 @@ pub fn setup_otel(
         .unwrap_or(Sampler::AlwaysOn);
 
     // Setup trace exporter for spans with timeout
-    let trace_exporter = opentelemetry_otlp::SpanExporter::builder()
+    let mut trace_exporter_builder = opentelemetry_otlp::SpanExporter::builder()
         .with_tonic()
         .with_endpoint(&otel_endpoint)
         .with_protocol(Protocol::Grpc)
-        .with_timeout(timeout)
-        .build()
-        .map_err(|e| {
-            SetupLogging::new(SetupLoggingKind::OtelExporter {
-                source: OtelExporterError::new(OtelExporterErrorKind::BuildSpanExporter {
-                    source: Box::new(e),
-                }),
-            })
-        })?;
+        .with_timeout(timeout);
+
+    if let Some(headers) = &headers {
+        let mut metadata = tonic::metadata::MetadataMap::new();
+        for (key, value) in headers {
+            if let (Ok(key), Ok(value)) = (
+                tonic::metadata::MetadataKey::from_bytes(key.as_bytes()),
+                tonic::metadata::MetadataValue::try_from(value.as_str()),
+            ) {
+                metadata.insert(key, value);
+            }
+        }
+        trace_exporter_builder = trace_exporter_builder.with_metadata(metadata);
+    }
+
+    let trace_exporter = trace_exporter_builder.build().map_err(|e| {
+        SetupLogging::new(SetupLoggingKind::OtelExporter {
+            source: OtelExporterError::new(OtelExporterErrorKind::BuildSpanExporter {
+                source: Box::new(e),
+            }),
+        })
+    })?;
 
     // Create resource with service name
     let resource = Resource::builder()
@@ -79,19 +93,32 @@ pub fn setup_otel(
     opentelemetry::global::set_tracer_provider(tracer_provider.clone());
 
     // Setup log exporter with timeout
-    let log_exporter = opentelemetry_otlp::LogExporter::builder()
+    let mut log_exporter_builder = opentelemetry_otlp::LogExporter::builder()
         .with_tonic()
         .with_endpoint(&otel_endpoint)
         .with_protocol(Protocol::Grpc)
-        .with_timeout(timeout)
-        .build()
-        .map_err(|e| {
-            SetupLogging::new(SetupLoggingKind::OtelExporter {
-                source: OtelExporterError::new(OtelExporterErrorKind::BuildLogExporter {
-                    source: Box::new(e),
-                }),
-            })
-        })?;
+        .with_timeout(timeout);
+
+    if let Some(headers) = &headers {
+        let mut metadata = tonic::metadata::MetadataMap::new();
+        for (key, value) in headers {
+            if let (Ok(key), Ok(value)) = (
+                tonic::metadata::MetadataKey::from_bytes(key.as_bytes()),
+                tonic::metadata::MetadataValue::try_from(value.as_str()),
+            ) {
+                metadata.insert(key, value);
+            }
+        }
+        log_exporter_builder = log_exporter_builder.with_metadata(metadata);
+    }
+
+    let log_exporter = log_exporter_builder.build().map_err(|e| {
+        SetupLogging::new(SetupLoggingKind::OtelExporter {
+            source: OtelExporterError::new(OtelExporterErrorKind::BuildLogExporter {
+                source: Box::new(e),
+            }),
+        })
+    })?;
 
     // Configure batch log processor
     let log_batch_config = opentelemetry_sdk::logs::BatchConfigBuilder::default()
@@ -110,19 +137,32 @@ pub fn setup_otel(
         .build();
 
     // Setup metrics exporter with timeout
-    let metric_exporter = opentelemetry_otlp::MetricExporter::builder()
+    let mut metric_exporter_builder = opentelemetry_otlp::MetricExporter::builder()
         .with_tonic()
         .with_endpoint(&otel_endpoint)
         .with_protocol(Protocol::Grpc)
-        .with_timeout(timeout)
-        .build()
-        .map_err(|e| {
-            SetupLogging::new(SetupLoggingKind::OtelExporter {
-                source: OtelExporterError::new(OtelExporterErrorKind::BuildMetricExporter {
-                    source: Box::new(e),
-                }),
-            })
-        })?;
+        .with_timeout(timeout);
+
+    if let Some(headers) = &headers {
+        let mut metadata = tonic::metadata::MetadataMap::new();
+        for (key, value) in headers {
+            if let (Ok(key), Ok(value)) = (
+                tonic::metadata::MetadataKey::from_bytes(key.as_bytes()),
+                tonic::metadata::MetadataValue::try_from(value.as_str()),
+            ) {
+                metadata.insert(key, value);
+            }
+        }
+        metric_exporter_builder = metric_exporter_builder.with_metadata(metadata);
+    }
+
+    let metric_exporter = metric_exporter_builder.build().map_err(|e| {
+        SetupLogging::new(SetupLoggingKind::OtelExporter {
+            source: OtelExporterError::new(OtelExporterErrorKind::BuildMetricExporter {
+                source: Box::new(e),
+            }),
+        })
+    })?;
 
     // Configure periodic streams for metrics
     let meter_provider = opentelemetry_sdk::metrics::SdkMeterProvider::builder()
