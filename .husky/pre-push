@@ -5,7 +5,7 @@ echo ""
 # Validate branch name
 BRANCH_NAME=$(git symbolic-ref --short HEAD 2>/dev/null)
 # Allowed pattern: feature/, bugfix/, hotfix/, release/, docs/, chore/, etc.
-BRANCH_PATTERN="^(feature|feat|bugfix|hotfix|release|docs|chore|refactor|test|ci|staging|dev)\/[a-z0-9-]+$|^(main|master|develop|development|dev)$"
+BRANCH_PATTERN="^(feature|fix|feat|bugfix|hotfix|release|docs|chore|refactor|test|ci|staging|dev)\/[a-z0-9-]+$|^(main|master|develop|development|dev)$"
 
 if ! echo "$BRANCH_NAME" | grep -qE "$BRANCH_PATTERN"; then
   echo "❌ Invalid branch name: $BRANCH_NAME"
