@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.17](https://github.com/0x67/lib-rs/compare/logger-v0.1.16...logger-v0.1.17) (2026-01-24)
+
+
+### Bug Fixes
+
+* removed http client ([30e6a76](https://github.com/0x67/lib-rs/commit/30e6a76e5f2c5fe1178ee30ac039ddafdfb31ef7))
+
 ## [0.1.16](https://github.com/0x67/lib-rs/compare/logger-v0.1.15...logger-v0.1.16) (2026-01-24)
 
 
