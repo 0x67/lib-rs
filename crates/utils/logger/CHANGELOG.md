@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.18](https://github.com/0x67/lib-rs/compare/logger-v0.1.17...logger-v0.1.18) (2026-01-24)
+
+
+### Features
+
+* added http_client args ([a7172c9](https://github.com/0x67/lib-rs/commit/a7172c9c4fa3bac489f60e1d7052c09313abbb55))
+
 ## [0.1.17](https://github.com/0x67/lib-rs/compare/logger-v0.1.16...logger-v0.1.17) (2026-01-24)
 
 
