@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/0x67/lib-rs/compare/gen-id-v0.1.2...gen-id-v0.1.3) (2026-01-24)
+
+
+### Bug Fixes
+
+* trigger release ([e17eaff](https://github.com/0x67/lib-rs/commit/e17eaff17d4ad33799abfe1afb721cffaccb4a08))
+
 ## [0.1.2](https://github.com/0x67/lib-rs/compare/gen-id-v0.1.1...gen-id-v0.1.2) (2025-12-07)
 
 
