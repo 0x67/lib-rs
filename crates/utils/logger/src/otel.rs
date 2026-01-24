@@ -14,6 +14,42 @@ use tracing_subscriber::Registry;
 
 use crate::ProtocolConfig;
 
+/// Async version of setup_otel that creates the HTTP client automatically.
+/// Use this when calling from an async context (e.g., Tauri's async setup).
+pub async fn setup_otel_async(
+    app_name: String,
+    otel_config: OtelConfig,
+) -> Result<
+    (
+        OpenTelemetryLayer<Registry, opentelemetry_sdk::trace::Tracer>,
+        opentelemetry_sdk::trace::SdkTracerProvider,
+        opentelemetry_sdk::logs::SdkLoggerProvider,
+        opentelemetry_sdk::metrics::SdkMeterProvider,
+    ),
+    SetupLogging,
+> {
+    let http_client = if matches!(otel_config.protocol, ProtocolConfig::Http) {
+        Some(
+            reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(otel_config.timeout_secs))
+                .build()
+                .map_err(|e| {
+                    SetupLogging::new(SetupLoggingKind::OtelExporter {
+                        source: OtelExporterError::new(OtelExporterErrorKind::BuildSpanExporter {
+                            source: Box::new(e),
+                        }),
+                    })
+                })?,
+        )
+    } else {
+        None
+    };
+
+    setup_otel(app_name, otel_config, http_client)
+}
+
+/// Synchronous version of setup_otel that requires an HTTP client to be passed in.
+/// Use this when the HTTP client is created externally in an async context.
 pub fn setup_otel(
     app_name: String,
     otel_config: OtelConfig,

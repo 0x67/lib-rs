@@ -298,6 +298,45 @@ impl Drop for LoggingGuard {
     }
 }
 
+/// Async version of setup_logging that automatically creates the HTTP client.
+/// Use this when calling from an async context (e.g., Tauri's async setup).
+#[cfg(feature = "otel")]
+pub async fn setup_logging_async(
+    app_name: impl Into<String>,
+    timezone_offset: Option<i8>,
+    logger_config: LoggerConfig,
+    env_filter_override: Option<Vec<&str>>,
+) -> Result<LoggingGuard, SetupLogging> {
+    let app_name: String = app_name.into();
+
+    // Create HTTP client in async context if OTEL is configured with HTTP protocol
+    let http_client = match &logger_config.otel {
+        Some(otel_config) if matches!(otel_config.protocol, ProtocolConfig::Http) => Some(
+            reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(otel_config.timeout_secs))
+                .build()
+                .map_err(|e| {
+                    SetupLogging::new(SetupLoggingKind::OtelExporter {
+                        source: OtelExporterError::new(OtelExporterErrorKind::BuildSpanExporter {
+                            source: Box::new(e),
+                        }),
+                    })
+                })?,
+        ),
+        _ => None,
+    };
+
+    setup_logging(
+        app_name,
+        timezone_offset,
+        logger_config,
+        env_filter_override,
+        http_client,
+    )
+}
+
+/// Synchronous version of setup_logging that requires an HTTP client to be passed in.
+/// Use this when the HTTP client is created externally in an async context.
 pub fn setup_logging(
     app_name: impl Into<String>,
     timezone_offset: Option<i8>,
