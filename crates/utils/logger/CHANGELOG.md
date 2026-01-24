@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.19](https://github.com/0x67/lib-rs/compare/logger-v0.1.18...logger-v0.1.19) (2026-01-24)
+
+
+### Features
+
+* added async variant for ([2e3d03e](https://github.com/0x67/lib-rs/commit/2e3d03e45eabb46eae79e6a5e4c0f374ec7851be))
+
 ## [0.1.18](https://github.com/0x67/lib-rs/compare/logger-v0.1.17...logger-v0.1.18) (2026-01-24)
 
 
