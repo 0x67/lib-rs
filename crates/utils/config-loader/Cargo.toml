@@ -10,13 +10,6 @@ publish.workspace = true
 [dependencies]
 _workspace-hack = { workspace = true }
 async-trait = { workspace = true }
-config = { workspace = true, features = [
-  "async",
-  "json5",
-  "json",
-  "yaml",
-  "toml",
-  "convert-case",
-] }
+config = { workspace = true, features = ["async", "json5", "json", "yaml", "toml", "convert-case"] }
 http-client = { workspace = true }
 serde = { workspace = true }

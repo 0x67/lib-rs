@@ -15,11 +15,7 @@ nanoid = ["dep:nanoid"]
 
 [dependencies]
 nanoid = { workspace = true, optional = true }
-sysinfo = { workspace = true, optional = true, features = [
-  "system",
-  "user",
-  "component",
-] }
+sysinfo = { workspace = true, optional = true, features = ["system", "user", "component"] }
 thiserror = { workspace = true }
 uuid = { workspace = true, features = ["v4", "v7", "zerocopy", "serde"] }
 uuid-simd = { workspace = true, optional = true, features = ["std"] }
