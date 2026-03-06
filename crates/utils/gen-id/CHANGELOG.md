@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/0x67/lib-rs/compare/gen-id-v0.1.3...gen-id-v0.1.4) (2026-03-06)
+
+
+### Features
+
+* update logger ([#41](https://github.com/0x67/lib-rs/issues/41)) ([85e88c8](https://github.com/0x67/lib-rs/commit/85e88c886854a32dff7f3d4f65a05b56048e07aa))
+
 ## [0.1.3](https://github.com/0x67/lib-rs/compare/gen-id-v0.1.2...gen-id-v0.1.3) (2026-01-24)
 
 
