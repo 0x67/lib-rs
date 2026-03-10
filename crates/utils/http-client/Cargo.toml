@@ -13,12 +13,28 @@ tracing = ["dep:reqwest-tracing", "dep:tracing-opentelemetry", "dep:tracing"]
 
 [dependencies]
 http = { workspace = true }
-opentelemetry = { workspace = true, default-features = false, features = ["trace"] }
-reqwest = { workspace = true, features = ["rustls", "gzip", "brotli", "deflate", "zstd", "json", "stream", "multipart", "charset", "http2", "system-proxy"] }
+opentelemetry = { workspace = true, default-features = false, features = [
+    "trace",
+] }
+reqwest = { workspace = true, features = [
+    "rustls",
+    "gzip",
+    "brotli",
+    "deflate",
+    "zstd",
+    "json",
+    "stream",
+    "multipart",
+    "charset",
+    "http2",
+    "system-proxy",
+] }
 reqwest-middleware = { workspace = true }
 reqwest-retry = { workspace = true }
-reqwest-tracing = { workspace = true, features = ["opentelemetry_0_30"], optional = true }
-rustls = { workspace = true }
+reqwest-tracing = { workspace = true, features = [
+    "opentelemetry_0_30",
+], optional = true }
+rustls = { features = ["ring"], workspace = true }
 rustls-pki-types = { workspace = true }
 sha2 = { workspace = true }
 tracing = { workspace = true, optional = true }
