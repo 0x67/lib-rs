@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/0x67/lib-rs/compare/http-client-v0.1.6...http-client-v0.1.7) (2026-03-10)
+
+
+### Bug Fixes
+
+* **http-client:** compilation issue ([#43](https://github.com/0x67/lib-rs/issues/43)) ([6c27bdc](https://github.com/0x67/lib-rs/commit/6c27bdc483130ba9baafd26c0be726058675eb94))
+
 ## [0.1.6](https://github.com/0x67/lib-rs/compare/http-client-v0.1.5...http-client-v0.1.6) (2026-03-06)
 
 
