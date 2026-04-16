@@ -2,8 +2,12 @@ pub mod config;
 #[cfg(feature = "file")]
 pub mod file;
 pub mod macros;
+#[cfg(feature = "metrics")]
+pub mod metrics;
 #[cfg(feature = "otel")]
 pub mod otel;
+#[cfg(any(feature = "otel", feature = "metrics"))]
+pub(crate) mod otlp_helpers;
 pub mod tracing_unwrap;
 pub mod util;
 
@@ -142,7 +146,7 @@ impl FileAppenderError {
     }
 }
 
-#[cfg(feature = "otel")]
+#[cfg(any(feature = "otel", feature = "metrics"))]
 /// Error that occurs when setting up OpenTelemetry exporter
 #[derive(Debug, thiserror::Error)]
 #[error("failed to setup otel exporter")]
@@ -152,7 +156,7 @@ pub struct OtelExporterError {
     pub kind: OtelExporterErrorKind,
 }
 
-#[cfg(feature = "otel")]
+#[cfg(any(feature = "otel", feature = "metrics"))]
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum OtelExporterErrorKind {
@@ -178,7 +182,7 @@ pub enum OtelExporterErrorKind {
     },
 }
 
-#[cfg(feature = "otel")]
+#[cfg(any(feature = "otel", feature = "metrics"))]
 impl OtelExporterError {
     pub fn new(kind: OtelExporterErrorKind) -> Self {
         Self { kind }
@@ -306,15 +310,13 @@ pub fn setup_logging(
 ) -> Result<LoggingGuard, SetupLogging> {
     #[cfg_attr(not(any(feature = "file", feature = "otel")), allow(unused_variables))]
     let app_name: String = app_name.into();
-    let fmt: &[BorrowedFormatItem<'_>] = if cfg!(debug_assertions) {
-        format_description!("[hour]:[minute]:[second].[subsecond digits:3]")
-    } else {
-        format_description!("[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:3]")
-    };
+    let fmt: &[BorrowedFormatItem<'_>] = format_description!(
+        "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:3][offset_hour sign:mandatory]:[offset_minute]"
+    );
 
     let timezone = match timezone_offset {
         Some(offset) => utc_offset_hours(offset),
-        None => UtcOffset::UTC,
+        None => UtcOffset::current_local_offset().unwrap_or(UtcOffset::UTC),
     };
     let timer = OffsetTime::new(timezone, fmt);
 
@@ -350,7 +352,7 @@ pub fn setup_logging(
                 registry.with(Some(otel_layer)).with(Some(bridge)),
                 Some(tracer),
                 Some(logger),
-                Some(meter),
+                meter,
             )
         } else {
             // When otel feature is enabled but no config provided, use empty layers

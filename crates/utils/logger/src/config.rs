@@ -127,7 +127,7 @@ pub struct OtelConfig {
     pub max_attributes_per_span: u32,
 }
 
-#[cfg(feature = "otel")]
+#[cfg(any(feature = "otel", feature = "metrics"))]
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum ProtocolConfig {
@@ -136,13 +136,13 @@ pub enum ProtocolConfig {
     Http,
 }
 
-#[cfg(feature = "otel")]
-fn default_protocol() -> ProtocolConfig {
+#[cfg(any(feature = "otel", feature = "metrics"))]
+pub(crate) fn default_protocol() -> ProtocolConfig {
     ProtocolConfig::Grpc
 }
 
-#[cfg(feature = "otel")]
-fn default_timeout_secs() -> u64 {
+#[cfg(any(feature = "otel", feature = "metrics"))]
+pub(crate) fn default_timeout_secs() -> u64 {
     3
 }
 
