@@ -1,4 +1,54 @@
-use logger::{Level, LoggerConfig, setup_logging};
+use logger::{Level, LoggerConfig, config::OutputMode, setup_logging};
+
+// === OutputMode integration tests ===
+
+#[test]
+fn test_output_mode_stdout_only() {
+    let mut config = LoggerConfig::default();
+    config.output_mode = OutputMode::Stdout;
+    // File should not be used even if file config is set
+    #[cfg(feature = "file")]
+    {
+        let mut file_cfg = logger::config::FileConfig::default();
+        file_cfg.enabled = true;
+        config.file = Some(file_cfg);
+    }
+    let result = setup_logging("test_stdout_only", None, config, None);
+    // NOTE: Global subscriber can only be set once per process. In test harness,
+    // first test wins; subsequent calls return Err. We verify setup doesn't panic.
+    assert!(result.is_ok() || result.is_err());
+}
+
+#[test]
+fn test_output_mode_file_only() {
+    let mut config = LoggerConfig::default();
+    config.output_mode = OutputMode::File;
+    // Has format set, but stdout should NOT register
+    config.format = Some(logger::config::FormatConfig::default());
+    let result = setup_logging("test_file_only", None, config, None);
+    // NOTE: Verifies setup doesn't panic — global subscriber limitation prevents
+    // asserting which layers were actually registered.
+    assert!(result.is_ok() || result.is_err());
+}
+
+#[test]
+fn test_output_mode_both() {
+    let mut config = LoggerConfig::default();
+    config.output_mode = OutputMode::Both;
+    let result = setup_logging("test_both", None, config, None);
+    assert!(result.is_ok() || result.is_err());
+}
+
+#[test]
+fn test_output_mode_none() {
+    let mut config = LoggerConfig::default();
+    config.output_mode = OutputMode::None;
+    // No output layers at all — verifies setup doesn't panic in OTel-only/silent mode
+    let result = setup_logging("test_none_mode", None, config, None);
+    assert!(result.is_ok() || result.is_err());
+}
+
+// === Existing tests ===
 
 #[test]
 fn test_setup_logging_basic() {

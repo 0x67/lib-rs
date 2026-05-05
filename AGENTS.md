@@ -32,8 +32,9 @@ Rules:
 - **Use mockall for mocking** - prefer [mockall](https://docs.rs/mockall/latest/mockall/) crate for creating mock implementations of traits and functions
 - **Localhost mock servers acceptable** - tests that bind to `127.0.0.1:0` with ephemeral ports and implement mock protocol servers in-process are acceptable
 - **E2E tests are exempt** - only apply these rules when creating unit/integration tests, NOT when user explicitly asks for e2e tests
+- Run unit tests using `cargo nextest` for faster feedback loops.
 
-When writing new tests:
+  When writing new tests:
 
 1. Default to pure unit tests using test doubles/mocks
 2. Add mockall to dev-dependencies if mocking is needed: `mockall = { workspace = true }`

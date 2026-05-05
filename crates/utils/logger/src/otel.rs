@@ -14,18 +14,17 @@ use tracing_subscriber::Registry;
 
 use crate::ProtocolConfig;
 
+pub type OtelProviders = (
+    OpenTelemetryLayer<Registry, opentelemetry_sdk::trace::Tracer>,
+    opentelemetry_sdk::trace::SdkTracerProvider,
+    opentelemetry_sdk::logs::SdkLoggerProvider,
+    Option<opentelemetry_sdk::metrics::SdkMeterProvider>,
+);
+
 pub fn setup_otel(
     app_name: String,
     otel_config: OtelConfig,
-) -> Result<
-    (
-        OpenTelemetryLayer<Registry, opentelemetry_sdk::trace::Tracer>,
-        opentelemetry_sdk::trace::SdkTracerProvider,
-        opentelemetry_sdk::logs::SdkLoggerProvider,
-        opentelemetry_sdk::metrics::SdkMeterProvider,
-    ),
-    SetupLogging,
-> {
+) -> Result<OtelProviders, SetupLogging> {
     let otel_endpoint = otel_config.endpoint.clone();
     let headers = otel_config.headers.clone();
     let timeout = otel_config.timeout();
@@ -66,7 +65,7 @@ pub fn setup_otel(
         }
         ProtocolConfig::Http => {
             let endpoint = if let Some(path) = &otel_config.traces_path {
-                format!("{}{}", &otel_endpoint, path)
+                format!("{}{}", otel_endpoint, path)
             } else {
                 otel_endpoint.clone()
             };
@@ -155,7 +154,7 @@ pub fn setup_otel(
         }
         ProtocolConfig::Http => {
             let endpoint = if let Some(path) = &otel_config.logs_path {
-                format!("{}{}", &otel_endpoint, path)
+                format!("{}{}", otel_endpoint, path)
             } else {
                 otel_endpoint.clone()
             };
@@ -200,71 +199,36 @@ pub fn setup_otel(
         .with_resource(resource.clone())
         .build();
 
-    // Setup metrics exporter with timeout
-    let metric_exporter = match otel_config.protocol {
-        ProtocolConfig::Grpc => {
-            let mut builder = opentelemetry_otlp::MetricExporter::builder()
-                .with_tonic()
-                .with_endpoint(&otel_endpoint)
-                .with_protocol(Protocol::Grpc)
-                .with_timeout(timeout);
-
-            if let Some(headers) = &headers {
-                let mut metadata = tonic::metadata::MetadataMap::new();
-                for (key, value) in headers {
-                    if let (Ok(key), Ok(value)) = (
-                        tonic::metadata::MetadataKey::from_bytes(key.as_bytes()),
-                        tonic::metadata::MetadataValue::try_from(value.as_str()),
-                    ) {
-                        metadata.insert(key, value);
-                    }
-                }
-                builder = builder.with_metadata(metadata);
-            }
-
-            builder.build()
-        }
-        ProtocolConfig::Http => {
-            let endpoint = if let Some(path) = &otel_config.metrics_path {
-                format!("{}{}", &otel_endpoint, path)
-            } else {
-                otel_endpoint.clone()
-            };
-            let mut builder = opentelemetry_otlp::MetricExporter::builder()
-                .with_http()
-                .with_endpoint(&endpoint)
-                .with_protocol(Protocol::HttpBinary)
-                .with_timeout(timeout);
-
-            if let Some(headers) = &headers {
-                let mut header_map = std::collections::HashMap::new();
-                for (key, value) in headers {
-                    header_map.insert(key.clone(), value.clone());
-                }
-                builder = builder.with_headers(header_map);
-            }
-
-            builder.build()
-        }
-    }
-    .map_err(|e| {
-        SetupLogging::new(SetupLoggingKind::OtelExporter {
-            source: OtelExporterError::new(OtelExporterErrorKind::BuildMetricExporter {
-                source: Box::new(e),
-            }),
-        })
-    })?;
-
-    // Configure periodic streams for metrics
-    let meter_provider = opentelemetry_sdk::metrics::SdkMeterProvider::builder()
-        .with_reader(
-            opentelemetry_sdk::metrics::PeriodicReader::builder(metric_exporter)
-                .with_interval(std::time::Duration::from_secs(60)) // Export every 60 seconds
-                .build(),
+    // Setup metrics exporter — skip when `metrics` feature is active (it owns the meter provider)
+    #[cfg(not(feature = "metrics"))]
+    let meter_provider = {
+        let metric_exporter = crate::otlp_helpers::build_metric_exporter(
+            &otel_endpoint,
+            &otel_config.protocol,
+            timeout,
+            headers.as_ref(),
+            otel_config.metrics_path.as_deref(),
         )
-        .build();
+        .map_err(|e| SetupLogging::new(SetupLoggingKind::OtelExporter { source: e }))?;
 
-    opentelemetry::global::set_meter_provider(meter_provider.clone());
+        let meter_provider = opentelemetry_sdk::metrics::SdkMeterProvider::builder()
+            .with_reader(
+                opentelemetry_sdk::metrics::PeriodicReader::builder(metric_exporter)
+                    .with_interval(std::time::Duration::from_secs(60))
+                    .build(),
+            )
+            .build();
+
+        opentelemetry::global::set_meter_provider(meter_provider.clone());
+        meter_provider
+    };
+
+    // When `metrics` feature is active, meter provider is None — the metrics module owns it
+    #[cfg(feature = "metrics")]
+    let meter_provider: Option<opentelemetry_sdk::metrics::SdkMeterProvider> = None;
+
+    #[cfg(not(feature = "metrics"))]
+    let meter_provider = Some(meter_provider);
 
     // Create the OpenTelemetry layer for automatic span capturing
     let telemetry_layer = tracing_opentelemetry::layer().with_tracer(tracer);

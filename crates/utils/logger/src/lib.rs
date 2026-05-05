@@ -2,8 +2,12 @@ pub mod config;
 #[cfg(feature = "file")]
 pub mod file;
 pub mod macros;
+#[cfg(feature = "metrics")]
+pub mod metrics;
 #[cfg(feature = "otel")]
 pub mod otel;
+#[cfg(any(feature = "otel", feature = "metrics"))]
+pub(crate) mod otlp_helpers;
 pub mod tracing_unwrap;
 pub mod util;
 
@@ -142,7 +146,7 @@ impl FileAppenderError {
     }
 }
 
-#[cfg(feature = "otel")]
+#[cfg(any(feature = "otel", feature = "metrics"))]
 /// Error that occurs when setting up OpenTelemetry exporter
 #[derive(Debug, thiserror::Error)]
 #[error("failed to setup otel exporter")]
@@ -152,7 +156,7 @@ pub struct OtelExporterError {
     pub kind: OtelExporterErrorKind,
 }
 
-#[cfg(feature = "otel")]
+#[cfg(any(feature = "otel", feature = "metrics"))]
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum OtelExporterErrorKind {
@@ -178,7 +182,7 @@ pub enum OtelExporterErrorKind {
     },
 }
 
-#[cfg(feature = "otel")]
+#[cfg(any(feature = "otel", feature = "metrics"))]
 impl OtelExporterError {
     pub fn new(kind: OtelExporterErrorKind) -> Self {
         Self { kind }
@@ -306,15 +310,13 @@ pub fn setup_logging(
 ) -> Result<LoggingGuard, SetupLogging> {
     #[cfg_attr(not(any(feature = "file", feature = "otel")), allow(unused_variables))]
     let app_name: String = app_name.into();
-    let fmt: &[BorrowedFormatItem<'_>] = if cfg!(debug_assertions) {
-        format_description!("[hour]:[minute]:[second].[subsecond digits:3]")
-    } else {
-        format_description!("[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:3]")
-    };
+    let fmt: &[BorrowedFormatItem<'_>] = format_description!(
+        "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:3][offset_hour sign:mandatory]:[offset_minute]"
+    );
 
     let timezone = match timezone_offset {
         Some(offset) => utc_offset_hours(offset),
-        None => UtcOffset::UTC,
+        None => UtcOffset::current_local_offset().unwrap_or(UtcOffset::UTC),
     };
     let timer = OffsetTime::new(timezone, fmt);
 
@@ -350,7 +352,7 @@ pub fn setup_logging(
                 registry.with(Some(otel_layer)).with(Some(bridge)),
                 Some(tracer),
                 Some(logger),
-                Some(meter),
+                meter,
             )
         } else {
             // When otel feature is enabled but no config provided, use empty layers
@@ -373,6 +375,7 @@ pub fn setup_logging(
             .file
             .as_ref()
             .filter(|fc| fc.enabled)
+            .filter(|_| logger_config.output_mode.enables_file())
             .map(|file_config| {
                 let (non_blocking, guard) =
                     setup_file_appender(app_name.clone(), file_config.clone())?;
@@ -409,22 +412,26 @@ pub fn setup_logging(
 
     #[cfg(feature = "stdout")]
     let (registry, stdout_guard) = {
-        let stdout_layer = logger_config.format.as_ref().map(|stdout_format| {
-            let (non_blocking, guard) = tracing_appender::non_blocking(std::io::stdout());
-            let layer = tracing_subscriber::fmt::Layer::default()
-                .with_writer(non_blocking)
-                .with_timer(timer)
-                .with_ansi(stdout_format.ansi)
-                .with_target(stdout_format.target)
-                .with_file(stdout_format.file)
-                .with_line_number(stdout_format.line_number)
-                .with_span_events(if stdout_format.with_span_events {
-                    tracing_subscriber::fmt::format::FmtSpan::FULL
-                } else {
-                    tracing_subscriber::fmt::format::FmtSpan::NONE
-                });
-            (layer, guard)
-        });
+        let stdout_layer = logger_config
+            .format
+            .as_ref()
+            .filter(|_| logger_config.output_mode.enables_stdout())
+            .map(|stdout_format| {
+                let (non_blocking, guard) = tracing_appender::non_blocking(std::io::stdout());
+                let layer = tracing_subscriber::fmt::Layer::default()
+                    .with_writer(non_blocking)
+                    .with_timer(timer)
+                    .with_ansi(stdout_format.ansi)
+                    .with_target(stdout_format.target)
+                    .with_file(stdout_format.file)
+                    .with_line_number(stdout_format.line_number)
+                    .with_span_events(if stdout_format.with_span_events {
+                        tracing_subscriber::fmt::format::FmtSpan::FULL
+                    } else {
+                        tracing_subscriber::fmt::format::FmtSpan::NONE
+                    });
+                (layer, guard)
+            });
 
         let (layer, guard) = stdout_layer.unzip();
         let guard = guard.unwrap_or_else(|| {
