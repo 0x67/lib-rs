@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.21](https://github.com/0x67/lib-rs/compare/logger-v0.1.20...logger-v0.1.21) (2026-05-05)
+
+
+### Features
+
+* add metrics ([#45](https://github.com/0x67/lib-rs/issues/45)) ([beeb27e](https://github.com/0x67/lib-rs/commit/beeb27e5063de940e029685d3757259d8f58fa26))
+
 ## [0.1.20](https://github.com/0x67/lib-rs/compare/logger-v0.1.19...logger-v0.1.20) (2026-03-06)
 
 
