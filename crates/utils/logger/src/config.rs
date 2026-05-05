@@ -2,10 +2,34 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "otel")]
 use std::time::Duration;
 
+/// Controls which output layers are registered by `setup_logging`.
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum OutputMode {
+    Stdout,
+    File,
+    #[default]
+    Both,
+    None,
+}
+
+impl OutputMode {
+    pub fn enables_stdout(&self) -> bool {
+        matches!(self, Self::Stdout | Self::Both)
+    }
+
+    pub fn enables_file(&self) -> bool {
+        matches!(self, Self::File | Self::Both)
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct LoggerConfig {
     pub max_level: String,
+    #[serde(default)]
+    pub output_mode: OutputMode,
     #[cfg(feature = "file")]
     pub file: Option<FileConfig>,
     #[cfg(feature = "otel")]
@@ -17,12 +41,42 @@ impl Default for LoggerConfig {
     fn default() -> Self {
         Self {
             max_level: "INFO".to_string(),
+            output_mode: OutputMode::default(),
             #[cfg(feature = "file")]
             file: None,
             #[cfg(feature = "otel")]
             otel: None,
             format: Some(FormatConfig::default()),
         }
+    }
+}
+
+impl LoggerConfig {
+    pub fn with_max_level(mut self, level: impl Into<String>) -> Self {
+        self.max_level = level.into();
+        self
+    }
+
+    pub fn with_output_mode(mut self, mode: OutputMode) -> Self {
+        self.output_mode = mode;
+        self
+    }
+
+    pub fn with_format(mut self, format: FormatConfig) -> Self {
+        self.format = Some(format);
+        self
+    }
+
+    #[cfg(feature = "file")]
+    pub fn with_file(mut self, file: FileConfig) -> Self {
+        self.file = Some(file);
+        self
+    }
+
+    #[cfg(feature = "otel")]
+    pub fn with_otel(mut self, otel: OtelConfig) -> Self {
+        self.otel = Some(otel);
+        self
     }
 }
 
@@ -58,6 +112,33 @@ impl Default for FormatConfig {
     }
 }
 
+impl FormatConfig {
+    pub fn with_ansi(mut self, ansi: bool) -> Self {
+        self.ansi = ansi;
+        self
+    }
+
+    pub fn with_target(mut self, target: bool) -> Self {
+        self.target = target;
+        self
+    }
+
+    pub fn with_file(mut self, file: bool) -> Self {
+        self.file = file;
+        self
+    }
+
+    pub fn with_line_number(mut self, line_number: bool) -> Self {
+        self.line_number = line_number;
+        self
+    }
+
+    pub fn with_span_events(mut self, span_events: bool) -> Self {
+        self.with_span_events = span_events;
+        self
+    }
+}
+
 #[cfg(feature = "file")]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
@@ -81,6 +162,29 @@ impl Default for FileConfig {
             enabled: false,
             format: None,
         }
+    }
+}
+
+#[cfg(feature = "file")]
+impl FileConfig {
+    pub fn with_path(mut self, path: impl Into<String>) -> Self {
+        self.path = path.into();
+        self
+    }
+
+    pub fn with_max_size(mut self, bytes: u64) -> Self {
+        self.max_size = bytes;
+        self
+    }
+
+    pub fn with_enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
+
+    pub fn with_format(mut self, format: FormatConfig) -> Self {
+        self.format = Some(format);
+        self
     }
 }
 
@@ -202,6 +306,31 @@ impl OtelConfig {
 
     pub fn scheduled_delay(&self) -> Duration {
         Duration::from_millis(self.scheduled_delay_ms)
+    }
+
+    pub fn with_endpoint(mut self, endpoint: impl Into<String>) -> Self {
+        self.endpoint = endpoint.into();
+        self
+    }
+
+    pub fn with_protocol(mut self, protocol: ProtocolConfig) -> Self {
+        self.protocol = protocol;
+        self
+    }
+
+    pub fn with_enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
+
+    pub fn with_sampler(mut self, sampler: SamplerConfig) -> Self {
+        self.sampler = Some(sampler);
+        self
+    }
+
+    pub fn with_timeout_secs(mut self, secs: u64) -> Self {
+        self.timeout_secs = secs;
+        self
     }
 }
 

@@ -375,6 +375,7 @@ pub fn setup_logging(
             .file
             .as_ref()
             .filter(|fc| fc.enabled)
+            .filter(|_| logger_config.output_mode.enables_file())
             .map(|file_config| {
                 let (non_blocking, guard) =
                     setup_file_appender(app_name.clone(), file_config.clone())?;
@@ -411,22 +412,26 @@ pub fn setup_logging(
 
     #[cfg(feature = "stdout")]
     let (registry, stdout_guard) = {
-        let stdout_layer = logger_config.format.as_ref().map(|stdout_format| {
-            let (non_blocking, guard) = tracing_appender::non_blocking(std::io::stdout());
-            let layer = tracing_subscriber::fmt::Layer::default()
-                .with_writer(non_blocking)
-                .with_timer(timer)
-                .with_ansi(stdout_format.ansi)
-                .with_target(stdout_format.target)
-                .with_file(stdout_format.file)
-                .with_line_number(stdout_format.line_number)
-                .with_span_events(if stdout_format.with_span_events {
-                    tracing_subscriber::fmt::format::FmtSpan::FULL
-                } else {
-                    tracing_subscriber::fmt::format::FmtSpan::NONE
-                });
-            (layer, guard)
-        });
+        let stdout_layer = logger_config
+            .format
+            .as_ref()
+            .filter(|_| logger_config.output_mode.enables_stdout())
+            .map(|stdout_format| {
+                let (non_blocking, guard) = tracing_appender::non_blocking(std::io::stdout());
+                let layer = tracing_subscriber::fmt::Layer::default()
+                    .with_writer(non_blocking)
+                    .with_timer(timer)
+                    .with_ansi(stdout_format.ansi)
+                    .with_target(stdout_format.target)
+                    .with_file(stdout_format.file)
+                    .with_line_number(stdout_format.line_number)
+                    .with_span_events(if stdout_format.with_span_events {
+                        tracing_subscriber::fmt::format::FmtSpan::FULL
+                    } else {
+                        tracing_subscriber::fmt::format::FmtSpan::NONE
+                    });
+                (layer, guard)
+            });
 
         let (layer, guard) = stdout_layer.unzip();
         let guard = guard.unwrap_or_else(|| {

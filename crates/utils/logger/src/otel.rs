@@ -65,7 +65,7 @@ pub fn setup_otel(
         }
         ProtocolConfig::Http => {
             let endpoint = if let Some(path) = &otel_config.traces_path {
-                format!("{}{}", &otel_endpoint, path)
+                format!("{}{}", otel_endpoint, path)
             } else {
                 otel_endpoint.clone()
             };
@@ -154,7 +154,7 @@ pub fn setup_otel(
         }
         ProtocolConfig::Http => {
             let endpoint = if let Some(path) = &otel_config.logs_path {
-                format!("{}{}", &otel_endpoint, path)
+                format!("{}{}", otel_endpoint, path)
             } else {
                 otel_endpoint.clone()
             };

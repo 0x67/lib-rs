@@ -21,6 +21,18 @@ pub struct MetricsConfig {
     pub system: SystemMetricsConfig,
 }
 
+impl MetricsConfig {
+    pub fn with_otlp(mut self, otlp: OtlpMetricsConfig) -> Self {
+        self.otlp = otlp;
+        self
+    }
+
+    pub fn with_system(mut self, system: SystemMetricsConfig) -> Self {
+        self.system = system;
+        self
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct OtlpMetricsConfig {
@@ -62,6 +74,31 @@ impl OtlpMetricsConfig {
     pub fn interval(&self) -> std::time::Duration {
         std::time::Duration::from_secs(self.interval_secs)
     }
+
+    pub fn with_enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
+
+    pub fn with_endpoint(mut self, endpoint: impl Into<String>) -> Self {
+        self.endpoint = endpoint.into();
+        self
+    }
+
+    pub fn with_protocol(mut self, protocol: ProtocolConfig) -> Self {
+        self.protocol = protocol;
+        self
+    }
+
+    pub fn with_interval_secs(mut self, secs: u64) -> Self {
+        self.interval_secs = secs;
+        self
+    }
+
+    pub fn with_timeout_secs(mut self, secs: u64) -> Self {
+        self.timeout_secs = secs;
+        self
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -89,5 +126,15 @@ impl Default for SystemMetricsConfig {
 impl SystemMetricsConfig {
     pub fn interval(&self) -> std::time::Duration {
         std::time::Duration::from_secs(self.interval_secs)
+    }
+
+    pub fn with_enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
+
+    pub fn with_interval_secs(mut self, secs: u64) -> Self {
+        self.interval_secs = secs;
+        self
     }
 }
